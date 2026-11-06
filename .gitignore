@@ -1,0 +1,19 @@
+# Local credentials and environment
+/database_supabase_password.txt
+/web/.env
+/web/.env.*
+!/web/.env.example
+
+# Local tooling state
+/supabase/.temp/
+/web/.wrangler/
+/.vscode/mcp.json
+
+# Generated web dependencies and builds
+/web/node_modules/
+/web/dist/
+/web/dist-ssr/
+
+# OS and editor files
+.DS_Store
+*.local

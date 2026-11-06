@@ -1,0 +1,8 @@
+[auth]
+minimum_password_length = 8
+
+[functions.public-invoice]
+verify_jwt = false
+
+[functions.manage-workshop-users]
+verify_jwt = true
