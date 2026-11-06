@@ -11,7 +11,6 @@ interface CompanySettings {
   email: string | null
   invoice_prefix: string
   invoice_footer: string | null
-  logo_path: string | null
 }
 
 export function SettingsPage({ client, role, userId }: { client: SupabaseClient; role: AppRole; userId: string }) {
@@ -24,7 +23,7 @@ export function SettingsPage({ client, role, userId }: { client: SupabaseClient;
   useEffect(() => {
     let active = true
     void client.from('company_settings')
-      .select('company_name, legal_entity, address, phone, email, invoice_prefix, invoice_footer, logo_path')
+      .select('company_name, legal_entity, address, phone, email, invoice_prefix, invoice_footer')
       .eq('id', true)
       .maybeSingle()
       .then(({ data, error: loadError }) => {
@@ -74,7 +73,6 @@ export function SettingsPage({ client, role, userId }: { client: SupabaseClient;
           <Field label="Telepon" name="phone" value={settings.phone ?? ''} />
           <Field label="Email" name="email" type="email" value={settings.email ?? ''} />
           <Field label="Awalan nomor invoice" name="invoice_prefix" value={settings.invoice_prefix} required />
-          <Field label="Lokasi logo (Storage)" name="logo_path" value={settings.logo_path ?? ''} disabled readOnly />
         </div>
         <Field label="Alamat" name="address" value={settings.address ?? ''} />
         <Field label="Footer invoice" name="invoice_footer" value={settings.invoice_footer ?? ''} />
