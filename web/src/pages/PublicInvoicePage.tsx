@@ -54,7 +54,10 @@ export function PublicInvoicePage({ client, token }: { client: SupabaseClient; t
     <main className="public-invoice-page">
       <article className="public-invoice-card">
         <header className="public-invoice-header">
-          <div><p className="eyebrow">INVOICE RESMI</p><h1>{invoice.company.company_name}</h1><p>{invoice.company.legal_entity}</p></div>
+          <div className="public-invoice-brand">
+            <img src="/logo-invoice-dpbs.jpeg" alt="Logo CV Dua Putra Bersaudara" />
+            <div><p className="eyebrow">INVOICE RESMI</p><h1>{invoice.company.company_name}</h1><p>{invoice.company.legal_entity}</p></div>
+          </div>
           <div className="public-invoice-number"><strong>{invoice.invoice_number}</strong><span className={`status-badge status-${invoice.status}`}>{statusLabel(invoice.status)}</span></div>
         </header>
         <div className="public-company-contact">

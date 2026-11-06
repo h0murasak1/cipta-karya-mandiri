@@ -284,6 +284,9 @@ textarea { min-height: 76px; resize: vertical; }
 .public-invoice-page { min-height: 100vh; padding: 35px 18px; background: #f2f5f3; }
 .public-invoice-card { width: min(860px, 100%); margin: 0 auto; padding: clamp(22px, 5vw, 48px); background: white; border: 1px solid #e6ece8; border-radius: 12px; box-shadow: 0 12px 40px rgba(32,54,51,.07); }
 .public-invoice-header { display: flex; justify-content: space-between; gap: 20px; padding-bottom: 23px; border-bottom: 1px solid var(--line); }
+.public-invoice-brand { display: flex; min-width: 0; align-items: center; gap: 15px; }
+.public-invoice-brand > img { width: 76px; height: 76px; flex: 0 0 76px; object-fit: contain; border: 1px solid #ece9f4; border-radius: 50%; }
+.public-invoice-brand > div { min-width: 0; }
 .public-invoice-header h1 { margin: 3px 0; font-size: 22px; }
 .public-invoice-header p:not(.eyebrow) { color: #78847e; font-size: 10px; }
 .public-invoice-number { display: grid; align-content: start; justify-items: end; gap: 8px; color: #344139; font-size: 12px; }
@@ -415,6 +418,9 @@ textarea { min-height: 76px; resize: vertical; }
   .public-invoice-page { padding: 12px 8px; }
   .public-invoice-card { padding: 20px 15px; }
   .public-invoice-header { flex-direction: column; }
+  .public-invoice-brand { align-items: flex-start; gap: 11px; }
+  .public-invoice-brand > img { width: 58px; height: 58px; flex-basis: 58px; }
+  .public-invoice-header h1 { font-size: 19px; }
   .public-invoice-number { justify-items: start; }
   .public-items-table table { min-width: 530px; }
   .search-control { width: 65%; }
