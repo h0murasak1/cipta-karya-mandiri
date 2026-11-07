@@ -3,7 +3,6 @@ import {
   ArrowLeftRight,
   BarChart3,
   Bell,
-  ChevronDown,
   ClipboardList,
   FileText,
   Hammer,
@@ -87,9 +86,8 @@ export function AppShell({
           <div className="profile-block">
             <div className="avatar">{profile.full_name.trim().charAt(0).toUpperCase() || 'U'}</div>
             <span className="profile-copy"><strong>{profile.full_name || 'Pengguna'}</strong><small>{role === 'owner' ? 'Owner / Admin' : role === 'admin' ? 'Admin' : 'Workshop'}</small></span>
-            <ChevronDown size={15} className="profile-chevron" />
+            <button className="profile-logout-button" onClick={onSignOut} aria-label="Keluar" title="Keluar"><LogOut size={16} /></button>
           </div>
-          <button className="nav-item nav-logout" onClick={onSignOut}><LogOut size={17} /><span>Keluar</span></button>
         </div>
       </aside>
       <main className="main-area">

@@ -595,6 +595,30 @@ small,
   color: #aaa99f;
 }
 
+.profile-logout-button {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  place-items: center;
+  color: #c9c1b6;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 8px;
+  transition: color .16s ease, background-color .16s ease, border-color .16s ease, transform .16s ease;
+}
+
+.profile-logout-button:hover {
+  color: #fffaf2;
+  background: rgba(224, 90, 29, .9);
+  border-color: rgba(255, 176, 92, .55);
+  transform: translateY(-1px);
+}
+
+.profile-logout-button:active {
+  transform: translateY(1px) scale(.96);
+}
+
 .nav-logout {
   margin-top: 4px;
 }
