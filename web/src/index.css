@@ -1583,6 +1583,18 @@ textarea {
   background: var(--canvas);
 }
 
+.public-invoice-actions {
+  display: flex;
+  width: min(920px, 100%);
+  justify-content: flex-end;
+  margin: 0 auto 14px;
+}
+
+.public-invoice-actions .button {
+  min-height: 42px;
+  gap: 8px;
+}
+
 .public-invoice-card {
   padding: clamp(24px, 5vw, 52px);
   background: var(--surface);
@@ -1771,6 +1783,11 @@ textarea {
 
   .sidebar-open {
     transform: translateX(0);
+  }
+
+  .main-area {
+    width: 100%;
+    margin-left: 0;
   }
 
   .brand-lockup {
@@ -2077,6 +2094,14 @@ textarea {
     padding: 14px 9px;
   }
 
+  .public-invoice-actions {
+    margin-bottom: 10px;
+  }
+
+  .public-invoice-actions .button {
+    min-height: 40px;
+  }
+
   .public-invoice-card {
     padding: 20px 16px;
   }
@@ -2116,6 +2141,48 @@ textarea {
   th {
     padding-right: 10px;
     padding-left: 10px;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  body {
+    background: white;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .public-invoice-page {
+    min-height: 0;
+    padding: 0;
+    background: white;
+  }
+
+  .public-invoice-actions {
+    display: none;
+  }
+
+  .public-invoice-card {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .public-items-table {
+    overflow: visible;
+  }
+
+  .public-items-table table {
+    width: 100%;
+    min-width: 0;
   }
 }
 

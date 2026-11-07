@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { AlertCircle, LoaderCircle } from 'lucide-react'
+import { AlertCircle, FileDown, LoaderCircle } from 'lucide-react'
 import { currency, date, statusLabel } from '../lib/format'
 
 interface PublicInvoice {
@@ -52,6 +52,11 @@ export function PublicInvoicePage({ client, token }: { client: SupabaseClient; t
 
   return (
     <main className="public-invoice-page">
+      <div className="public-invoice-actions">
+        <button className="button button-primary" type="button" onClick={() => window.print()}>
+          <FileDown size={16} /> Unduh PDF
+        </button>
+      </div>
       <article className="public-invoice-card">
         <header className="public-invoice-header">
           <div className="public-invoice-brand">

@@ -326,9 +326,19 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
     setIssuingId(invoiceId)
     setError(null)
     setIssuedLink(null)
-    const { data, error: issueError } = await client.functions.invoke('issue-invoice', { body: { invoice_id: invoiceId } })
+    const { data: sessionData, error: sessionError } = await client.auth.getSession()
+    if (sessionError || !sessionData.session) {
+      setError(`Sesi login tidak tersedia. Silakan masuk kembali${sessionError ? `: ${sessionError.message}` : '.'}`)
+      setIssuingId(null)
+      return
+    }
+
+    const { data, error: issueError } = await client.functions.invoke('issue-invoice', {
+      body: { invoice_id: invoiceId },
+      headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
+    })
     if (issueError) {
-      setError(`Token invoice gagal diterbitkan: ${issueError.message}`)
+      setError(`Token invoice gagal diterbitkan: ${await edgeFunctionErrorMessage(issueError)}`)
       setIssuingId(null)
       return
     }
@@ -523,7 +533,10 @@ function ResetWorkshopPasswordForm({ client, user, onDone, onCancel }: Pick<Form
 async function edgeFunctionErrorMessage(error: { message: string; context?: unknown }) {
   if (error.context instanceof Response) {
     const body: unknown = await error.context.clone().json().catch(() => null)
-    if (body && typeof body === 'object' && 'error' in body && typeof body.error === 'string') return body.error
+    if (body && typeof body === 'object') {
+      if ('error' in body && typeof body.error === 'string') return body.error
+      if ('message' in body && typeof body.message === 'string') return body.message
+    }
   }
   return error.message
 }
