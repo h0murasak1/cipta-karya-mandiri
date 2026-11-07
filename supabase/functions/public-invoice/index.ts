@@ -46,7 +46,7 @@ Deno.serve(async (request) => {
     }
 
     const { data: company, error: companyError } = await admin.from('company_settings')
-      .select('company_name, legal_entity, address, phone, email, invoice_footer')
+      .select('company_name, legal_entity, address, phone, email, bank_name, bank_account_name, bank_account_number, invoice_footer')
       .eq('id', true)
       .maybeSingle()
     if (companyError) throw companyError

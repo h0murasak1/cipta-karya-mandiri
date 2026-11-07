@@ -9,6 +9,9 @@ interface CompanySettings {
   address: string | null
   phone: string | null
   email: string | null
+  bank_name: string | null
+  bank_account_name: string | null
+  bank_account_number: string | null
   invoice_prefix: string
   invoice_footer: string | null
 }
@@ -23,7 +26,7 @@ export function SettingsPage({ client, role, userId }: { client: SupabaseClient;
   useEffect(() => {
     let active = true
     void client.from('company_settings')
-      .select('company_name, legal_entity, address, phone, email, invoice_prefix, invoice_footer')
+      .select('company_name, legal_entity, address, phone, email, bank_name, bank_account_name, bank_account_number, invoice_prefix, invoice_footer')
       .eq('id', true)
       .maybeSingle()
       .then(({ data, error: loadError }) => {
@@ -50,6 +53,9 @@ export function SettingsPage({ client, role, userId }: { client: SupabaseClient;
       address: String(form.get('address') || '').trim() || null,
       phone: String(form.get('phone') || '').trim() || null,
       email: String(form.get('email') || '').trim() || null,
+      bank_name: String(form.get('bank_name') || '').trim() || null,
+      bank_account_name: String(form.get('bank_account_name') || '').trim() || null,
+      bank_account_number: String(form.get('bank_account_number') || '').trim() || null,
       invoice_prefix: String(form.get('invoice_prefix')).trim(),
       invoice_footer: String(form.get('invoice_footer') || '').trim() || null,
       updated_by: userId,
@@ -75,6 +81,12 @@ export function SettingsPage({ client, role, userId }: { client: SupabaseClient;
           <Field label="Awalan nomor invoice" name="invoice_prefix" value={settings.invoice_prefix} required />
         </div>
         <Field label="Alamat" name="address" value={settings.address ?? ''} />
+        <div className="settings-section-heading settings-bank-heading"><div><h2>Rekening perusahaan</h2><p className="muted">Nomor rekening ditampilkan pada invoice publik jika diisi.</p></div></div>
+        <div className="form-grid">
+          <Field label="Nama bank" name="bank_name" value={settings.bank_name ?? ''} autoComplete="off" />
+          <Field label="Nama pemilik rekening" name="bank_account_name" value={settings.bank_account_name ?? ''} autoComplete="off" />
+          <Field label="Nomor rekening" name="bank_account_number" value={settings.bank_account_number ?? ''} autoComplete="off" />
+        </div>
         <Field label="Footer invoice" name="invoice_footer" value={settings.invoice_footer ?? ''} />
         {error && <div className="form-error" role="alert">{error}</div>}
         {notice && <div className="inline-success">{notice}</div>}

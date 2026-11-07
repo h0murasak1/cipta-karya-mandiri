@@ -17,7 +17,17 @@ interface PublicInvoice {
   project: { title: string; project_code: string } | null
   items: { description: string; quantity: number; unit: string; unit_price: number; line_total: number }[]
   payments: { amount: number; paid_at: string; payment_method: string }[]
-  company: { company_name: string; legal_entity: string; address: string | null; phone: string | null; email: string | null; invoice_footer: string | null }
+  company: {
+    company_name: string
+    legal_entity: string
+    address: string | null
+    phone: string | null
+    email: string | null
+    bank_name: string | null
+    bank_account_name: string | null
+    bank_account_number: string | null
+    invoice_footer: string | null
+  }
 }
 
 export function PublicInvoicePage({ client, token }: { client: SupabaseClient; token: string }) {
@@ -84,6 +94,12 @@ export function PublicInvoicePage({ client, token }: { client: SupabaseClient; t
           <span className="invoice-outstanding">Sisa tagihan <strong>{currency(outstanding)}</strong></span>
         </div>
         {invoice.public_note && <div className="public-invoice-note"><strong>Catatan</strong><p>{invoice.public_note}</p></div>}
+        {invoice.company.bank_account_number && <section className="public-bank-details">
+          <h2>Informasi pembayaran</h2>
+          {invoice.company.bank_name && <p><span>Bank</span><strong>{invoice.company.bank_name}</strong></p>}
+          <p><span>Nomor rekening</span><strong>{invoice.company.bank_account_number}</strong></p>
+          {invoice.company.bank_account_name && <p><span>Atas nama</span><strong>{invoice.company.bank_account_name}</strong></p>}
+        </section>}
         {invoice.payments.length > 0 && <section className="public-payment-history"><h2>Riwayat pembayaran</h2>{invoice.payments.map((payment, index) => <div key={`${payment.paid_at}-${index}`}><span>{date(payment.paid_at)} · {payment.payment_method}</span><strong>{currency(payment.amount)}</strong></div>)}</section>}
         <footer className="public-invoice-footer">{invoice.company.invoice_footer || 'Terima kasih atas kepercayaan Anda.'}</footer>
       </article>

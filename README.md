@@ -144,10 +144,11 @@ Atur `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` sebagai environment variab
 3. Buat proyek di menu **Proyek**; lengkapi nilai kontrak, target selesai, dan detail pekerjaan.
 4. Atur staf yang mengerjakan proyek melalui aksi **Atur staf**.
 5. Catat progres proyek. Untuk menambahkan bukti foto, pilih proyek lalu tambahkan progres dan foto.
-6. Buat invoice dari menu **Invoice**, kemudian gunakan **Terbitkan QR** untuk membuat tautan/QR yang dapat dibagikan.
-7. Catat pembayaran melalui menu **Pembayaran**. Pembayaran invoice akan dicatat bersama transaksi kas.
-8. Catat arus kas non-invoice di menu **Transaksi**, lalu tinjau ringkasan di **Dashboard** dan **Laporan**.
-9. Tambah akun Workshop atau reset password dari menu **Pengguna**.
+6. Isi rekening perusahaan di **Pengaturan** (nama bank, pemilik, dan nomor rekening) bila ingin menampilkannya kepada pelanggan. Data rekening muncul di invoice publik jika nomor rekening diisi.
+7. Buat invoice dari menu **Invoice**, kemudian gunakan **Terbitkan QR** untuk membuat tautan/QR yang dapat dibagikan.
+8. Catat pembayaran melalui menu **Pembayaran**. Pembayaran invoice akan dicatat bersama transaksi kas.
+9. Catat arus kas non-invoice di menu **Transaksi**, lalu tinjau ringkasan di **Dashboard** dan **Laporan**.
+10. Tambah akun Workshop atau reset password dari menu **Pengguna**.
 
 ### Staf Workshop
 

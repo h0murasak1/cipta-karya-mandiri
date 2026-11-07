@@ -176,7 +176,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
           return {
             id: item.id,
             title: item.title,
-            detail: item.project_code,
+            detail: '',
             projectCode: item.project_code,
             cells: [
               item.project_code,
@@ -418,28 +418,28 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
               <tbody>
                 {visibleRows.map((row) => (
                   <tr key={row.id}>
-                    <td><span className="strong-cell">{row.title}</span><small className="table-subline">{row.detail}</small></td>
+                      <td><span className="strong-cell">{row.title}</span>{row.detail && <small className="table-subline">{row.detail}</small>}</td>
                     {row.cells.map((cell, index) => <td key={`${row.id}-${index}`}>{index === row.cells.length - 1 && row.status ? <StatusBadge value={row.status} text={cell} /> : cell}</td>)}
                     <td className="row-actions">
-                      {section === 'projects' && (
-                        <>
-                          {role !== 'workshop' && <select aria-label={`Ubah status ${row.title}`} value={row.status} onChange={(event) => void updateProjectStatus(row.id, event.target.value)}>
-                            <option value="waiting_confirmation">Menunggu konfirmasi</option><option value="waiting_work">Menunggu pengerjaan</option><option value="in_progress">Dalam proses</option><option value="completed">Selesai</option><option value="cancelled">Dibatalkan</option>
+                        <div className="row-action-group">
+                          {section === 'projects' && role !== 'workshop' && <select aria-label={`Ubah status ${row.title}`} value={row.status} onChange={(event) => void updateProjectStatus(row.id, event.target.value)}>
+                              <option value="waiting_confirmation">Menunggu konfirmasi</option><option value="waiting_work">Menunggu pengerjaan</option><option value="in_progress">Dalam proses</option><option value="completed">Selesai</option><option value="cancelled">Dibatalkan</option>
                           </select>}
-                          {role !== 'workshop' && <button className="text-button" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode, assignedIds: row.assignmentIds }); setDialog('assignment') }}>Atur staf</button>}
-                          <button className="text-button" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode }); setDialog('progress') }}>Tambah progres</button>
-                        </>
-                      )}
-                      {section === 'customers' && <button className="text-button text-danger" onClick={() => void archiveCustomer(row.id)}>Arsipkan</button>}
-                      {section === 'invoices' && row.status !== 'cancelled' && (
-                        <button className="text-button" disabled={issuingId === row.id} onClick={() => void issueInvoice(row.id)}>
-                          {issuingId === row.id ? 'Memproses...' : row.createdAt === 'token-active' ? 'Ganti QR' : 'Terbitkan QR'}
-                        </button>
-                      )}
-                      {section === 'users' && row.role === 'workshop' && <button className="text-button" onClick={() => {
-                        setSelectedUser({ id: row.id, name: row.title, extra: row.detail })
-                        setDialog('reset-user')
-                      }}>Reset password</button>}
+                          <div className="row-action-buttons">
+                            {section === 'projects' && role !== 'workshop' && <button className="text-button" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode, assignedIds: row.assignmentIds }); setDialog('assignment') }}>Atur staf</button>}
+                            {section === 'projects' && <button className="text-button" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode }); setDialog('progress') }}>Tambah progres</button>}
+                            {section === 'customers' && <button className="text-button text-danger" onClick={() => void archiveCustomer(row.id)}>Arsipkan</button>}
+                            {section === 'invoices' && row.status !== 'cancelled' && (
+                              <button className="text-button" disabled={issuingId === row.id} onClick={() => void issueInvoice(row.id)}>
+                                {issuingId === row.id ? 'Memproses...' : row.createdAt === 'token-active' ? 'Ganti QR' : 'Terbitkan QR'}
+                              </button>
+                            )}
+                            {section === 'users' && row.role === 'workshop' && <button className="text-button" onClick={() => {
+                              setSelectedUser({ id: row.id, name: row.title, extra: row.detail })
+                              setDialog('reset-user')
+                            }}>Reset password</button>}
+                          </div>
+                        </div>
                     </td>
                   </tr>
                 ))}
