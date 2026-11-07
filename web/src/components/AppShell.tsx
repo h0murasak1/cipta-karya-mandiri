@@ -3,7 +3,6 @@ import {
   ArrowLeftRight,
   BarChart3,
   Bell,
-  ClipboardList,
   FileText,
   Hammer,
   LayoutDashboard,
@@ -11,6 +10,7 @@ import {
   Menu,
   Settings,
   Users,
+  UsersRound,
   Wallet,
   MoreHorizontal,
   X,
@@ -26,7 +26,7 @@ const navigation: { id: Section; label: string; icon: typeof LayoutDashboard; ro
   { id: 'payments', label: 'Pembayaran', icon: Wallet, roles: ['owner', 'admin'] },
   { id: 'transactions', label: 'Transaksi', icon: ArrowLeftRight, roles: ['owner', 'admin'] },
   { id: 'reports', label: 'Laporan', icon: BarChart3, roles: ['owner', 'admin'] },
-  { id: 'users', label: 'Pengguna', icon: ClipboardList, roles: ['owner', 'admin'] },
+  { id: 'users', label: 'Staf Workshop', icon: UsersRound, roles: ['owner', 'admin'] },
   { id: 'settings', label: 'Pengaturan', icon: Settings, roles: ['owner', 'admin', 'workshop'] },
 ]
 
@@ -38,7 +38,7 @@ const sectionTitles: Record<Section, string> = {
   payments: 'Pembayaran',
   transactions: 'Transaksi',
   reports: 'Laporan',
-  users: 'Pengguna',
+  users: 'Staf Workshop',
   settings: 'Pengaturan',
 }
 

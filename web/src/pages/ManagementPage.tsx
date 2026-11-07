@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { ChevronLeft, ChevronRight, Edit3, QrCode, Search, Trash2, UserRoundPlus, LoaderCircle, Plus, ImagePlus } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Edit3, QrCode, Search, Trash2, UserRoundPlus, LoaderCircle, Plus, ImagePlus, UsersRound } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Dialog } from '../components/Dialog'
 import { currency, date, statusLabel } from '../lib/format'
@@ -70,7 +70,7 @@ const configs: Record<ManagementProps['section'], { title: string; subtitle: str
   invoices: { title: 'Invoice', subtitle: 'Kelola tagihan, pembayaran, dan tautan invoice publik.', add: 'Invoice baru', columns: ['Nomor invoice', 'Pelanggan', 'Tanggal / jatuh tempo', 'Total', 'Sisa', 'Status'] },
   payments: { title: 'Pembayaran', subtitle: 'Catat DP, termin, dan pelunasan melalui proses atomik database.', add: 'Catat pembayaran', columns: ['Invoice', 'Tanggal', 'Metode', 'Referensi', 'Jumlah'] },
   transactions: { title: 'Transaksi', subtitle: 'Arus kas dari pembayaran invoice dan pencatatan manual.', add: 'Transaksi manual', columns: ['Keterangan', 'Tanggal', 'Kategori', 'Jenis', 'Jumlah'] },
-  users: { title: 'Pengguna internal', subtitle: 'Kelola akun staf Workshop dan status akses.', add: 'Tambah staf Workshop', columns: ['Nama / email', 'Telepon', 'Peran', 'Status'] },
+  users: { title: 'Staf Workshop', subtitle: 'Kelola akun, akses, dan penugasan staf workshop.', add: 'Tambah staf', columns: ['Nama / email', 'Telepon', 'Peran', 'Status'] },
 }
 
 export function ManagementPage({ client, role, section, userId }: ManagementProps) {
@@ -676,12 +676,11 @@ function ProjectForm({ client, userId, customers, categories, onDone, onCancel }
 function AssignmentForm({ client, userId, project, users, onDone, onCancel }: FormProps & { project: Option; users: Option[] }) {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>(project.assignedIds ?? [])
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setBusy(true)
     setError(null)
-    const form = new FormData(event.currentTarget)
-    const selectedIds = [...new Set(form.getAll('profile_ids').map(String))]
     const currentIds = new Set(project.assignedIds ?? [])
     const selectedSet = new Set(selectedIds)
     const additions = selectedIds.filter((id) => !currentIds.has(id))
@@ -717,14 +716,23 @@ function AssignmentForm({ client, userId, project, users, onDone, onCancel }: Fo
   }
 
   return <form className="form-stack" onSubmit={(event) => void save(event)}>
-    <label className="field-group">
-      <span className="field-label">Pilih staf workshop</span>
-      <select name="profile_ids" multiple size={Math.min(Math.max(users.length, 3), 8)} defaultValue={project.assignedIds ?? []} disabled={busy || users.length === 0}>
-        {users.map((user) => <option value={user.id} key={user.id}>{user.name}</option>)}
-      </select>
-    </label>
-    {users.length === 0 && <p className="small muted">Belum ada akun Workshop aktif untuk ditugaskan.</p>}
-    <p className="small muted">Gunakan Ctrl (Windows) atau Command (macOS) untuk memilih beberapa staf. Perubahan akses mengikuti policy RLS di database.</p>
+    <div className="assignment-intro">
+      <span className="assignment-intro-icon"><UsersRound size={19} /></span>
+      <div><strong>Tentukan tim proyek</strong><p>Pilih staf yang bertanggung jawab mengerjakan proyek ini.</p></div>
+      <span className="assignment-count">{selectedIds.length} dipilih</span>
+    </div>
+    {users.length > 0 ? <div className="assignment-list" role="group" aria-label="Daftar staf workshop">
+      {users.map((user) => {
+        const selected = selectedIds.includes(user.id)
+        return <label className={`assignment-option ${selected ? 'assignment-option-selected' : ''}`} key={user.id}>
+          <input type="checkbox" name="profile_ids" value={user.id} checked={selected} disabled={busy} onChange={() => setSelectedIds((current) => selected ? current.filter((id) => id !== user.id) : [...current, user.id])} />
+          <span className="assignment-check" aria-hidden="true">{selected && <Check size={14} strokeWidth={2.5} />}</span>
+          <span className="assignment-user-copy"><strong>{user.name}</strong><small>Staf Workshop</small></span>
+          <span className="assignment-option-state">{selected ? 'Ditugaskan' : 'Pilih'}</span>
+        </label>
+      })}
+    </div> : <div className="assignment-empty"><UsersRound size={22} /><strong>Belum ada staf aktif</strong><p>Tambahkan akun staf Workshop terlebih dahulu dari menu Staf Workshop.</p></div>}
+    <p className="small muted">Perubahan penugasan langsung tersimpan ke proyek dan mengikuti policy akses database.</p>
     <FormFooter error={error} busy={busy} onCancel={onCancel} />
   </form>
 }
