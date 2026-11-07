@@ -77,7 +77,7 @@ export function ReportsPage({ client }: { client: SupabaseClient }) {
   return (
     <section className="reports-page">
       <div className="page-heading-row">
-        <div><p className="eyebrow">ANALISIS</p><h1>Laporan</h1><p className="muted">Ringkasan kas berdasarkan transaksi tercatat, bukan laba akuntansi.</p></div>
+        <div><p className="eyebrow">Analisis</p><h1>Laporan</h1><p className="muted">Ringkasan kas berdasarkan transaksi tercatat, bukan laba akuntansi.</p></div>
         <label className="period-select"><span>Periode</span><select value={period} onChange={(event) => setPeriod(event.target.value)}><option value="30">30 hari</option><option value="90">90 hari</option><option value="365">12 bulan</option></select></label>
       </div>
       {error && <div className="form-error" role="alert">{error}</div>}

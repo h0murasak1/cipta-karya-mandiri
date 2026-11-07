@@ -64,9 +64,9 @@ export function SettingsPage({ client, role, userId }: { client: SupabaseClient;
 
   return (
     <section className="settings-page">
-      <div className="page-heading-row"><div><p className="eyebrow">ADMINISTRASI</p><h1>Pengaturan</h1><p className="muted">Identitas perusahaan untuk invoice dan dokumen.</p></div></div>
+      <div className="page-heading-row"><div><p className="eyebrow">Administrasi</p><h1>Pengaturan</h1><p className="muted">Identitas perusahaan untuk invoice dan dokumen.</p></div></div>
       {canManageCompany && <form className="panel settings-panel" onSubmit={(event) => void save(event)}>
-        <div className="settings-section-heading"><div><h2>Informasi perusahaan</h2><p className="muted">Perubahan dapat dilakukan oleh Owner maupun Admin.</p></div><span className="role-pill">OWNER / ADMIN</span></div>
+        <div className="settings-section-heading"><div><h2>Informasi perusahaan</h2><p className="muted">Perubahan dapat dilakukan oleh Owner maupun Admin.</p></div><span className="role-pill">Owner / Admin</span></div>
         <div className="form-grid">
           <Field label="Nama usaha" name="company_name" value={settings.company_name} required />
           <Field label="Badan hukum" name="legal_entity" value={settings.legal_entity} required />

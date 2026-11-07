@@ -206,7 +206,7 @@ export function DashboardPage({ client, role, onNavigate }: { client: SupabaseCl
           {!isWorkshop && <button className="button button-primary dashboard-create-button" onClick={() => onNavigate('projects')}><Plus size={16} /> Proyek baru</button>}
         </div>
       </div>
-      <div className="dashboard-data-note"><span className="live-dot" /> DATA LANGSUNG <span>Ringkasan memakai data operasional tersimpan. Periode kas: {periodLabel}.</span></div>
+      <div className="dashboard-data-note"><span className="live-dot" /> Data langsung <span>Ringkasan memakai data operasional tersimpan. Periode kas: {periodLabel}.</span></div>
       {error && <div className="inline-alert" role="alert"><CircleAlert size={17} />{error}</div>}
 
       {isWorkshop ? (

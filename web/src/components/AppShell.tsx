@@ -74,10 +74,10 @@ export function AppShell({
           <span className="brand-copy"><strong>CKM / WORKSHOP</strong><small>Cipta Karya Mandiri</small></span>
           <button className="icon-button mobile-close" onClick={() => setMobileOpen(false)} aria-label="Tutup menu"><X size={18} /></button>
         </div>
-        <p className="nav-caption">MENU UTAMA</p>
+        <p className="nav-caption">Menu utama</p>
         <nav className="primary-nav" aria-label="Navigasi utama">
           {menu.map(({ id, label, icon: Icon }) => (
-            <button key={id} className={`nav-item ${section === id ? 'nav-item-active' : ''}`} onClick={() => navigate(id)}>
+            <button key={id} title={label} aria-current={section === id ? 'page' : undefined} className={`nav-item ${section === id ? 'nav-item-active' : ''}`} onClick={() => navigate(id)}>
               <Icon size={17} strokeWidth={1.8} />
               <span>{label}</span>
             </button>
@@ -94,7 +94,7 @@ export function AppShell({
       </aside>
       <main className="main-area">
         <header className="topbar">
-          <button className="icon-button mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Buka menu"><Menu size={20} /></button>
+          <button className="icon-button mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Buka menu" aria-expanded={mobileOpen}><Menu size={20} /></button>
           <div className="mobile-brand">CKM Workshop</div>
           <div className="breadcrumb"><span>Workspace</span><span className="breadcrumb-separator">/</span><strong>{sectionTitles[section]}</strong></div>
           <div className="topbar-actions">

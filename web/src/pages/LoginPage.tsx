@@ -24,19 +24,19 @@ export function LoginPage({ client, authError }: { client: SupabaseClient; authE
           <div className="login-logo-frame">
             <img className="login-logo" src="/logo-ckm.jpeg" alt="Logo CV Dua Putra Bersaudara" />
           </div>
-          <span className="login-brand-caption">WORKSHOP MANAGEMENT</span>
+          <span className="login-brand-caption">Manajemen workshop</span>
         </div>
         <div className="login-message">
-          <p className="eyebrow eyebrow-light">CV DUA PUTRA BERSAUDARA</p>
-          <h1>Ruang kerja yang tertata. Proyek yang terkendali.</h1>
-          <p>Pantau pekerjaan workshop, transaksi, dan tagihan dalam satu tempat.</p>
+          <p className="eyebrow eyebrow-light">CV Dua Putra Bersaudara</p>
+          <h1>Sistem manajemen workshop</h1>
+          <p>Kelola proyek, progres pekerjaan, transaksi, dan invoice dalam satu aplikasi internal.</p>
         </div>
-        <span className="login-footnote">SISTEM MANAJEMEN WORKSHOP <i /> AKSES INTERNAL</span>
+        <span className="login-footnote">Sistem manajemen workshop <i /> Akses internal</span>
       </section>
       <section className="login-form-side">
         <form className="login-card" onSubmit={(event) => void submit(event)}>
           <span className="login-icon"><LockKeyhole size={19} /></span>
-          <p className="eyebrow">AKSES INTERNAL</p>
+          <p className="eyebrow">Akses internal</p>
           <h2>Selamat datang kembali</h2>
           <p className="muted">Masuk ke akun Anda untuk melanjutkan pekerjaan.</p>
           <label className="field-label" htmlFor="login-email">Email</label>
