@@ -2742,25 +2742,103 @@ body {
 
 .login-aside::before {
   position: absolute;
-  right: 12%;
-  bottom: 12%;
-  width: 190px;
-  height: 190px;
-  border: 1px solid rgba(255, 176, 92, .28);
-  border-radius: 50%;
+  z-index: -1;
+  right: 5%;
+  bottom: 8%;
+  width: min(460px, 42vw);
+  height: min(460px, 42vw);
+  background: url('/logo-ckm.jpeg') center / contain no-repeat;
   content: "";
-  opacity: .8;
+  opacity: .2;
+  mix-blend-mode: screen;
 }
 
 .login-aside::after {
   position: absolute;
-  right: calc(12% + 28px);
-  bottom: calc(12% + 28px);
-  width: 132px;
-  height: 132px;
+  right: 8%;
+  bottom: 11%;
+  width: min(320px, 30vw);
+  height: min(320px, 30vw);
   border: 1px solid rgba(255, 176, 92, .15);
   border-radius: 50%;
   content: "";
+}
+
+@media (max-width: 760px) {
+  .login-aside::before {
+    right: -9%;
+    bottom: 6%;
+    width: 250px;
+    height: 250px;
+    opacity: .13;
+  }
+
+  .login-aside::after {
+    right: 2%;
+    bottom: 9%;
+    width: 190px;
+    height: 190px;
+  }
+}
+
+/* Final login composition: center the brand mark and give the message room to lead. */
+.login-aside::before {
+  right: auto;
+  bottom: 7%;
+  left: 50%;
+  width: min(520px, 44vw);
+  height: min(520px, 44vw);
+  transform: translateX(-50%);
+}
+
+.login-message h1 {
+  max-width: 12ch;
+  font-size: clamp(42px, 4.4vw, 64px);
+  line-height: 1.04;
+}
+
+.login-message > p:last-child {
+  max-width: 430px;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.login-point strong {
+  font-size: 14px;
+}
+
+.login-point small {
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .login-aside::before {
+    right: auto;
+    bottom: 4%;
+    left: 50%;
+    width: 270px;
+    height: 270px;
+    transform: translateX(-50%);
+    opacity: .1;
+  }
+
+  .login-message h1 {
+    max-width: 11ch;
+    font-size: clamp(34px, 9.5vw, 43px);
+  }
+
+  .login-message > p:last-child {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .login-point strong {
+    font-size: 13px;
+  }
+
+  .login-point small {
+    font-size: 12px;
+  }
 }
 
 .login-message,
