@@ -1584,6 +1584,48 @@ textarea {
   line-height: 1.65;
 }
 
+.login-points {
+  display: grid;
+  max-width: 440px;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.login-point {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: start;
+  gap: 11px;
+}
+
+.login-point > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  color: #ffb05c;
+  background: rgba(255, 176, 92, .1);
+  border: 1px solid rgba(255, 176, 92, .22);
+  border-radius: 8px;
+}
+
+.login-point div {
+  display: grid;
+  gap: 2px;
+}
+
+.login-point strong {
+  color: #f7f1e7;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.login-point small {
+  color: #aaa99f;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .login-footnote {
   gap: 10px;
   color: #c2c0b7;
@@ -1626,6 +1668,13 @@ textarea {
   font-size: 26px;
   font-weight: 600;
   letter-spacing: -.03em;
+}
+
+.login-card > .eyebrow {
+  margin-bottom: 4px;
+  color: var(--action);
+  font-size: 11px;
+  letter-spacing: .14em;
 }
 
 .login-card > .muted {

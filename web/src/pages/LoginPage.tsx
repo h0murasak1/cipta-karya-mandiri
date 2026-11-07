@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { ArrowRight, LockKeyhole } from 'lucide-react'
+import { ArrowRight, FolderKanban, Link2, LockKeyhole, WalletCards } from 'lucide-react'
 
 export function LoginPage({ client, authError }: { client: SupabaseClient; authError: string | null }) {
   const [email, setEmail] = useState('')
@@ -30,13 +30,18 @@ export function LoginPage({ client, authError }: { client: SupabaseClient; authE
           <p className="eyebrow eyebrow-light">Cipta Karya Mandiri</p>
           <h1>Sistem manajemen workshop</h1>
           <p>Kelola proyek, progres pekerjaan, transaksi, dan invoice dalam satu aplikasi internal.</p>
+          <div className="login-points">
+            <div className="login-point"><span><FolderKanban size={16} /></span><div><strong>Proyek lebih terpantau</strong><small>Jadwal, staf, dan progres dalam satu alur kerja.</small></div></div>
+            <div className="login-point"><span><WalletCards size={16} /></span><div><strong>Arus kas lebih tertata</strong><small>Pemasukan, pengeluaran, dan pembayaran tercatat.</small></div></div>
+            <div className="login-point"><span><Link2 size={16} /></span><div><strong>Invoice siap dibagikan</strong><small>Terbitkan link invoice publik untuk pelanggan.</small></div></div>
+          </div>
         </div>
         <span className="login-footnote">Sistem manajemen workshop <i /> Akses internal</span>
       </section>
       <section className="login-form-side">
         <form className="login-card" onSubmit={(event) => void submit(event)}>
           <span className="login-icon"><LockKeyhole size={19} /></span>
-          <p className="eyebrow">Akses internal</p>
+          <p className="eyebrow">RUANG KERJA INTERNAL</p>
           <h2>Selamat datang kembali</h2>
           <p className="muted">Masuk ke akun Anda untuk melanjutkan pekerjaan.</p>
           <label className="field-label" htmlFor="login-email">Email</label>
