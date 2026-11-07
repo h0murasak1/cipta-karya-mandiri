@@ -22,12 +22,12 @@ export function LoginPage({ client, authError }: { client: SupabaseClient; authE
       <section className="login-aside">
         <div className="login-brand">
           <div className="login-logo-frame">
-            <img className="login-logo" src="/logo-ckm.jpeg" alt="Logo CV Dua Putra Bersaudara" />
+            <img className="login-logo" src="/logo-ckm.jpeg" alt="Logo Cipta Karya Mandiri" />
           </div>
           <span className="login-brand-caption">Manajemen workshop</span>
         </div>
         <div className="login-message">
-          <p className="eyebrow eyebrow-light">CV Dua Putra Bersaudara</p>
+          <p className="eyebrow eyebrow-light">Cipta Karya Mandiri</p>
           <h1>Sistem manajemen workshop</h1>
           <p>Kelola proyek, progres pekerjaan, transaksi, dan invoice dalam satu aplikasi internal.</p>
         </div>

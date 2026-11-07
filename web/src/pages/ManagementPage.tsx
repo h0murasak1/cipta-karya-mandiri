@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { QrCode, Search, UserRoundPlus, LoaderCircle, Plus, ImagePlus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Edit3, QrCode, Search, Trash2, UserRoundPlus, LoaderCircle, Plus, ImagePlus } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Dialog } from '../components/Dialog'
 import { currency, date, statusLabel } from '../lib/format'
@@ -17,6 +17,20 @@ interface Row {
   createdAt?: string
   projectCode?: string
   assignmentIds?: string[]
+  editData?: {
+    phone?: string | null
+    email?: string | null
+    address?: string | null
+    notes?: string | null
+    categoryId?: string | null
+    projectId?: string | null
+    customerId?: string | null
+    transactionDate?: string
+    transactionType?: 'income' | 'expense'
+    amount?: number
+    invoiceId?: string | null
+    paymentId?: string | null
+  }
 }
 
 interface Option {
@@ -74,9 +88,11 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [filter, setFilter] = useState('')
-  const [dialog, setDialog] = useState<'customer' | 'project' | 'invoice' | 'transaction' | 'payment' | 'progress' | 'assignment' | 'user' | 'reset-user' | null>(null)
+  const [page, setPage] = useState(1)
+  const [dialog, setDialog] = useState<'customer' | 'edit-customer' | 'project' | 'invoice' | 'transaction' | 'edit-transaction' | 'payment' | 'progress' | 'assignment' | 'user' | 'reset-user' | null>(null)
   const [selectedProject, setSelectedProject] = useState<Option | null>(null)
   const [selectedUser, setSelectedUser] = useState<Option | null>(null)
+  const [selectedRow, setSelectedRow] = useState<Row | null>(null)
   const [issuedLink, setIssuedLink] = useState<string | null>(null)
   const [issuingId, setIssuingId] = useState<string | null>(null)
 
@@ -193,13 +209,14 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
         nextProjects = (result.data ?? []).map((item) => ({ id: item.id, name: item.title, extra: item.project_code }))
       }
     } else if (section === 'customers') {
-      const result = await client.from('customers').select('id, name, phone, email, customer_code, is_active').eq('is_active', true).order('created_at', { ascending: false })
+      const result = await client.from('customers').select('id, name, phone, email, address, notes, customer_code, is_active').eq('is_active', true).order('created_at', { ascending: false })
       if (result.error) setError(`Pelanggan gagal dimuat: ${result.error.message}`)
       else nextRows = (result.data ?? []).map((item) => ({
         id: item.id,
         title: item.name,
         detail: item.phone ?? 'Tanpa nomor telepon',
         cells: [item.phone ?? '—', item.email ?? '—', item.customer_code ?? '—', 'Aktif'],
+        editData: { phone: item.phone, email: item.email, address: item.address, notes: item.notes },
       }))
     } else if (section === 'invoices') {
       const projectResult = await client.from('projects')
@@ -271,7 +288,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
       }
     } else if (section === 'transactions') {
       const result = await client.from('transactions')
-        .select('id, transaction_type, category_id, project_id, invoice_id, transaction_date, amount, description, transaction_categories(name)')
+        .select('id, transaction_type, category_id, project_id, customer_id, invoice_id, payment_id, transaction_date, amount, description, transaction_categories(name)')
         .order('transaction_date', { ascending: false })
         .limit(250)
       if (result.error) setError(`Transaksi gagal dimuat: ${result.error.message}`)
@@ -282,6 +299,16 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
         cells: [date(item.transaction_date), (Array.isArray(item.transaction_categories) ? item.transaction_categories[0] : item.transaction_categories)?.name ?? '—', item.transaction_type === 'income' ? 'Pemasukan' : 'Pengeluaran', currency(item.amount)],
         status: item.transaction_type,
         amount: Number(item.amount),
+        editData: {
+          categoryId: item.category_id,
+          projectId: item.project_id,
+          customerId: item.customer_id,
+          transactionDate: item.transaction_date.slice(0, 10),
+          transactionType: item.transaction_type,
+          amount: Number(item.amount),
+          invoiceId: item.invoice_id,
+          paymentId: item.payment_id,
+        },
       }))
     } else {
       const result = await client.from('profiles').select('id, full_name, email, phone, role, is_active').order('full_name')
@@ -306,10 +333,14 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
 
   useEffect(() => { void refresh() }, [refresh])
 
-  const visibleRows = useMemo(() => {
+  const filteredRows = useMemo(() => {
     const query = filter.trim().toLocaleLowerCase('id-ID')
     return query ? rows.filter((row) => [row.title, row.detail, ...row.cells].join(' ').toLocaleLowerCase('id-ID').includes(query)) : rows
   }, [filter, rows])
+  const pageSize = 10
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize))
+  const currentPage = Math.min(page, pageCount)
+  const visibleRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const startAdd = () => {
     setNotice(null)
     setError(null)
@@ -373,6 +404,17 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
     }
   }
 
+  const deleteTransaction = async (id: string) => {
+    if (!window.confirm('Hapus transaksi manual ini? Tindakan ini tidak dapat dibatalkan.')) return
+    setError(null)
+    const { error: deleteError } = await client.from('transactions').delete().eq('id', id)
+    if (deleteError) setError(`Transaksi gagal dihapus: ${deleteError.message}`)
+    else {
+      setNotice('Transaksi manual berhasil dihapus.')
+      await refresh()
+    }
+  }
+
   const updateProjectStatus = async (id: string, status: string) => {
     const { error: updateError } = await client.from('projects').update({ status }).eq('id', id)
     if (updateError) setError(`Status proyek gagal diperbarui: ${updateError.message}`)
@@ -406,8 +448,8 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
       )}
       <section className="panel data-panel">
         <div className="table-toolbar">
-          <div className="table-count">{visibleRows.length} data</div>
-          <label className="search-control"><Search size={16} /><input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Cari data..." /></label>
+          <div className="table-count">{filteredRows.length} data</div>
+          <label className="search-control"><Search size={16} /><input value={filter} onChange={(event) => { setFilter(event.target.value); setPage(1) }} placeholder="Cari data..." /></label>
         </div>
         {busy ? <div className="loading-inline"><LoaderCircle className="spin" size={18} /> Memuat data...</div> : visibleRows.length === 0 ? (
           <div className="empty-state"><span className="empty-icon"><Plus size={19} /></span><p>{error ? 'Data tidak dapat ditampilkan sampai kendala di atas diperbaiki.' : 'Belum ada data untuk ditampilkan.'}</p></div>
@@ -418,22 +460,31 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
               <tbody>
                 {visibleRows.map((row) => (
                   <tr key={row.id}>
-                      <td><span className="strong-cell">{row.title}</span>{row.detail && <small className="table-subline">{row.detail}</small>}</td>
-                    {row.cells.map((cell, index) => <td key={`${row.id}-${index}`}>{index === row.cells.length - 1 && row.status ? <StatusBadge value={row.status} text={cell} /> : cell}</td>)}
+                      <td data-label={columns[0]}><span className="strong-cell">{row.title}</span>{row.detail && <small className="table-subline">{row.detail}</small>}</td>
+                    {row.cells.map((cell, index) => <td data-label={columns[index + 1]} key={`${row.id}-${index}`}>{index === row.cells.length - 1 && row.status ? <StatusBadge value={row.status} text={cell} /> : cell}</td>)}
                     <td className="row-actions">
                         <div className="row-action-group">
-                          {section === 'projects' && role !== 'workshop' && <select aria-label={`Ubah status ${row.title}`} value={row.status} onChange={(event) => void updateProjectStatus(row.id, event.target.value)}>
+                            {section === 'projects' && role !== 'workshop' && <select className="row-action-status" aria-label={`Ubah status ${row.title}`} value={row.status} onChange={(event) => void updateProjectStatus(row.id, event.target.value)}>
                               <option value="waiting_confirmation">Menunggu konfirmasi</option><option value="waiting_work">Menunggu pengerjaan</option><option value="in_progress">Dalam proses</option><option value="completed">Selesai</option><option value="cancelled">Dibatalkan</option>
                           </select>}
                           <div className="row-action-buttons">
-                            {section === 'projects' && role !== 'workshop' && <button className="text-button" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode, assignedIds: row.assignmentIds }); setDialog('assignment') }}>Atur staf</button>}
-                            {section === 'projects' && <button className="text-button" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode }); setDialog('progress') }}>Tambah progres</button>}
-                            {section === 'customers' && <button className="text-button text-danger" onClick={() => void archiveCustomer(row.id)}>Arsipkan</button>}
+                            {section === 'projects' && role !== 'workshop' && <button className="text-button project-action-button project-action-assignment" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode, assignedIds: row.assignmentIds }); setDialog('assignment') }}><UserRoundPlus size={14} />Atur staf</button>}
+                            {section === 'projects' && <button className="text-button project-action-button project-action-progress" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode }); setDialog('progress') }}><ImagePlus size={14} />Tambah progres</button>}
+                            {section === 'customers' && <>
+                              <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-customer') }}><Edit3 size={14} />Edit</button>
+                              <button className="text-button text-danger" onClick={() => void archiveCustomer(row.id)}>Arsipkan</button>
+                            </>}
                             {section === 'invoices' && row.status !== 'cancelled' && (
                               <button className="text-button" disabled={issuingId === row.id} onClick={() => void issueInvoice(row.id)}>
-                                {issuingId === row.id ? 'Memproses...' : row.createdAt === 'token-active' ? 'Ganti QR' : 'Terbitkan QR'}
+                                {issuingId === row.id ? 'Memproses...' : row.createdAt === 'token-active' ? 'Perbarui link invoice' : 'Generate link invoice'}
                               </button>
                             )}
+                            {section === 'transactions' && (row.editData?.invoiceId || row.editData?.paymentId)
+                              ? <span className="row-action-locked">Dikelola dari pembayaran</span>
+                              : section === 'transactions' && <>
+                                <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-transaction') }}><Edit3 size={14} />Edit</button>
+                                <button className="text-button text-danger record-action-button" onClick={() => void deleteTransaction(row.id)}><Trash2 size={14} />Hapus</button>
+                              </>}
                             {section === 'users' && row.role === 'workshop' && <button className="text-button" onClick={() => {
                               setSelectedUser({ id: row.id, name: row.title, extra: row.detail })
                               setDialog('reset-user')
@@ -447,13 +498,24 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
             </table>
           </div>
         )}
+        {!busy && filteredRows.length > pageSize && (
+          <div className="table-pagination" aria-label="Navigasi halaman data">
+            <span>Halaman {currentPage} dari {pageCount}</span>
+            <div className="table-pagination-actions">
+              <button className="icon-button" type="button" aria-label="Halaman sebelumnya" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft size={17} /></button>
+              <button className="icon-button" type="button" aria-label="Halaman berikutnya" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}><ChevronRight size={17} /></button>
+            </div>
+          </div>
+        )}
       </section>
       {section === 'users' && <p className="small muted page-footnote"><UserRoundPlus size={14} /> Owner dan Admin memiliki izin pengelolaan yang sama. Berikan password awal dan password reset kepada staf melalui jalur aman; staf dapat menggantinya di Pengaturan.</p>}
 
       {dialog === 'customer' && <Dialog title="Pelanggan baru" onClose={() => setDialog(null)}><CustomerForm client={client} userId={userId} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
+      {dialog === 'edit-customer' && selectedRow && <Dialog title="Edit pelanggan" description={selectedRow.title} onClose={() => setDialog(null)}><CustomerForm client={client} userId={userId} initial={selectedRow} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'project' && <Dialog title="Proyek baru" onClose={() => setDialog(null)}><ProjectForm client={client} userId={userId} customers={customers} categories={categories} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'invoice' && <Dialog title="Buat invoice" description="Invoice baru disimpan sebagai draft." onClose={() => setDialog(null)}><InvoiceForm client={client} userId={userId} customers={customers} projects={projects} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'transaction' && <Dialog title="Transaksi manual" onClose={() => setDialog(null)}><TransactionForm client={client} userId={userId} projects={projects} categories={categories} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
+      {dialog === 'edit-transaction' && selectedRow && <Dialog title="Edit transaksi manual" description={selectedRow.title} onClose={() => setDialog(null)}><TransactionForm client={client} userId={userId} projects={projects} categories={categories} initial={selectedRow} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'payment' && <Dialog title="Catat pembayaran" description="Pembayaran dicatat oleh fungsi database secara atomik bersama transaksi kas masuk." onClose={() => setDialog(null)}><PaymentForm client={client} userId={userId} invoices={invoices} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'progress' && selectedProject && <Dialog title="Tambah progres proyek" description={`${selectedProject.name} · ${selectedProject.extra ?? ''}`} onClose={() => setDialog(null)}><ProgressForm client={client} userId={userId} project={selectedProject} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'assignment' && selectedProject && <Dialog title="Atur staf proyek" description={`${selectedProject.name} · ${selectedProject.extra ?? ''}`} onClose={() => setDialog(null)}><AssignmentForm client={client} userId={userId} project={selectedProject} users={workshopUsers} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
@@ -541,7 +603,7 @@ async function edgeFunctionErrorMessage(error: { message: string; context?: unkn
   return error.message
 }
 
-function CustomerForm({ client, userId, onDone, onCancel }: FormProps) {
+function CustomerForm({ client, userId, initial, onDone, onCancel }: FormProps & { initial?: Row }) {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -549,23 +611,25 @@ function CustomerForm({ client, userId, onDone, onCancel }: FormProps) {
     setBusy(true)
     setError(null)
     const form = new FormData(event.currentTarget)
-    const { error: insertError } = await client.from('customers').insert({
+    const customerPayload = {
       name: String(form.get('name')).trim(),
       phone: String(form.get('phone') || '').trim() || null,
       email: String(form.get('email') || '').trim() || null,
       address: String(form.get('address') || '').trim() || null,
       notes: String(form.get('notes') || '').trim() || null,
-      created_by: userId,
-    })
-    if (insertError) setError(`Pelanggan gagal disimpan: ${insertError.message}`)
-    else onDone('Pelanggan berhasil ditambahkan.')
+    }
+    const result = initial
+      ? await client.from('customers').update(customerPayload).eq('id', initial.id)
+      : await client.from('customers').insert({ ...customerPayload, created_by: userId })
+    if (result.error) setError(`Pelanggan gagal disimpan: ${result.error.message}`)
+    else onDone(initial ? 'Data pelanggan berhasil diperbarui.' : 'Pelanggan berhasil ditambahkan.')
     setBusy(false)
   }
   return <form className="form-stack" onSubmit={(event) => void save(event)}>
-    <Field label="Nama pelanggan" name="name" required />
-    <div className="form-grid"><Field label="Nomor telepon" name="phone" /><Field label="Email" name="email" type="email" /></div>
-    <Field label="Alamat" name="address" />
-    <Field label="Catatan internal" name="notes" />
+    <Field label="Nama pelanggan" name="name" required defaultValue={initial?.title} />
+    <div className="form-grid"><Field label="Nomor telepon" name="phone" defaultValue={initial?.editData?.phone ?? ''} /><Field label="Email" name="email" type="email" defaultValue={initial?.editData?.email ?? ''} /></div>
+    <Field label="Alamat" name="address" defaultValue={initial?.editData?.address ?? ''} />
+    <Field label="Catatan internal" name="notes" defaultValue={initial?.editData?.notes ?? ''} />
     <FormFooter error={error} busy={busy} onCancel={onCancel} />
   </form>
 }
@@ -743,11 +807,11 @@ function InvoiceForm({ client, userId, customers, projects, onDone, onCancel }: 
   </form>
 }
 
-function TransactionForm({ client, userId, projects, categories, onDone, onCancel }: FormProps & { projects: Option[]; categories: Option[] }) {
+function TransactionForm({ client, userId, projects, categories, initial, onDone, onCancel }: FormProps & { projects: Option[]; categories: Option[]; initial?: Row }) {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [today] = useState(localDateInputValue)
-  const [type, setType] = useState<'income' | 'expense'>('expense')
+  const [type, setType] = useState<'income' | 'expense'>(initial?.editData?.transactionType ?? 'expense')
   const [customerOptions, setCustomerOptions] = useState<Option[]>([])
   useEffect(() => {
     let active = true
@@ -763,7 +827,7 @@ function TransactionForm({ client, userId, projects, categories, onDone, onCance
     setBusy(true)
     setError(null)
     const form = new FormData(event.currentTarget)
-    const { error: insertError } = await client.from('transactions').insert({
+    const transactionPayload = {
       transaction_type: type,
       category_id: String(form.get('category_id') || '') || null,
       project_id: String(form.get('project_id') || '') || null,
@@ -771,18 +835,20 @@ function TransactionForm({ client, userId, projects, categories, onDone, onCance
       transaction_date: localDateTimeIso(String(form.get('transaction_date'))),
       amount: Number(form.get('amount')),
       description: String(form.get('description')).trim(),
-      recorded_by: userId,
-    })
-    if (insertError) setError(`Transaksi gagal disimpan: ${insertError.message}`)
-    else onDone('Transaksi manual berhasil disimpan.')
+    }
+    const result = initial
+      ? await client.from('transactions').update(transactionPayload).eq('id', initial.id)
+      : await client.from('transactions').insert({ ...transactionPayload, recorded_by: userId })
+    if (result.error) setError(`Transaksi gagal disimpan: ${result.error.message}`)
+    else onDone(initial ? 'Transaksi manual berhasil diperbarui.' : 'Transaksi manual berhasil disimpan.')
     setBusy(false)
   }
   return <form className="form-stack" onSubmit={(event) => void save(event)}>
     <div className="field-group"><span className="field-label">Jenis transaksi</span><div className="segmented-control"><button type="button" className={type === 'income' ? 'segment-active' : ''} onClick={() => setType('income')}>Pemasukan</button><button type="button" className={type === 'expense' ? 'segment-active' : ''} onClick={() => setType('expense')}>Pengeluaran</button></div></div>
-    <div className="form-grid"><SelectField label="Kategori" name="category_id" options={categories.filter((item) => item.extra === type)} required /><Field label="Nominal (Rp)" name="amount" type="number" min="1" required /></div>
-    <div className="form-grid"><Field label="Tanggal" name="transaction_date" type="date" defaultValue={today} required /><SelectField label="Proyek terkait" name="project_id" options={projects} optionalLabel="Tanpa proyek" /></div>
-    <SelectField label="Pelanggan terkait" name="customer_id" options={customerOptions} optionalLabel="Tanpa pelanggan" />
-    <Field label="Keterangan" name="description" required />
+    <div className="form-grid"><SelectField label="Kategori" name="category_id" options={categories.filter((item) => item.extra === type)} required defaultValue={initial?.editData?.categoryId ?? ''} /><Field label="Nominal (Rp)" name="amount" type="number" min="1" required defaultValue={initial?.editData?.amount?.toString()} /></div>
+    <div className="form-grid"><Field label="Tanggal" name="transaction_date" type="date" defaultValue={initial?.editData?.transactionDate ?? today} required /><SelectField label="Proyek terkait" name="project_id" options={projects} optionalLabel="Tanpa proyek" defaultValue={initial?.editData?.projectId ?? ''} /></div>
+    <SelectField label="Pelanggan terkait" name="customer_id" options={customerOptions} optionalLabel="Tanpa pelanggan" defaultValue={initial?.editData?.customerId ?? ''} />
+    <Field label="Keterangan" name="description" required defaultValue={initial?.title} />
     <FormFooter error={error} busy={busy} onCancel={onCancel} />
   </form>
 }
@@ -887,9 +953,9 @@ function Field({ label, name, type = 'text', required, min, max, step, minLength
   </label>
 }
 
-function SelectField({ label, name, options, required, optionalLabel }: { label: string; name: string; options: Option[]; required?: boolean; optionalLabel?: string }) {
+function SelectField({ label, name, options, required, optionalLabel, defaultValue = '' }: { label: string; name: string; options: Option[]; required?: boolean; optionalLabel?: string; defaultValue?: string }) {
   return <label className="field-group"><span className="field-label">{label}{required && <i> *</i>}</span>
-    <select name={name} required={required} defaultValue="">
+    <select name={name} required={required} defaultValue={defaultValue}>
       <option value="">{required ? 'Pilih...' : optionalLabel ?? 'Pilih...'}</option>
       {options.map((option) => <option value={option.id} key={option.id}>{option.name}{option.extra ? ` · ${option.extra}` : ''}</option>)}
     </select>

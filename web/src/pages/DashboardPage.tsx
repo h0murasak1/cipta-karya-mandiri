@@ -185,6 +185,7 @@ export function DashboardPage({ client, role, onNavigate }: { client: SupabaseCl
     <section className="dashboard-page">
       <div className="page-heading-row">
         <div className="dashboard-title">
+          <p className="eyebrow">WORKSHOP CONTROL ROOM</p>
           <h1>Dashboard</h1>
           <p className="muted">{isWorkshop ? 'Pantau progres proyek yang ditugaskan kepada Anda.' : 'Ringkasan aktivitas dan kinerja workshop Anda.'}</p>
         </div>

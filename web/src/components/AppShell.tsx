@@ -70,7 +70,7 @@ export function AppShell({
       {mobileOpen && <button className="mobile-backdrop" aria-label="Tutup menu" onClick={() => setMobileOpen(false)} />}
       <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`}>
         <div className="brand-lockup">
-          <span className="brand-mark">CKM</span>
+          <span className="brand-mark"><img src="/logo-ckm.jpeg" alt="Logo Cipta Karya Mandiri" /></span>
           <span className="brand-copy"><strong>CKM / WORKSHOP</strong><small>Cipta Karya Mandiri</small></span>
           <button className="icon-button mobile-close" onClick={() => setMobileOpen(false)} aria-label="Tutup menu"><X size={18} /></button>
         </div>
