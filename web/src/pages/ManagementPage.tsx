@@ -329,7 +329,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
           paymentId: item.payment_id,
         },
       }))
-    } else {
+    } else if (section === 'users') {
       const result = await client.from('profiles').select('id, full_name, email, phone, role, is_active').order('full_name')
       if (result.error) setError(`Profil pengguna gagal dimuat: ${result.error.message}`)
       else nextRows = (result.data ?? []).map((item) => ({
