@@ -9,6 +9,7 @@ export type Section =
   | 'transactions'
   | 'reports'
   | 'users'
+  | 'project-categories'
   | 'settings'
 
 export interface Profile {

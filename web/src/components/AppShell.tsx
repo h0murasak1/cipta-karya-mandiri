@@ -11,6 +11,7 @@ import {
   Settings,
   Users,
   UsersRound,
+  Tags,
   Wallet,
   MoreHorizontal,
   X,
@@ -27,6 +28,7 @@ const navigation: { id: Section; label: string; icon: typeof LayoutDashboard; ro
   { id: 'transactions', label: 'Transaksi', icon: ArrowLeftRight, roles: ['owner', 'admin'] },
   { id: 'reports', label: 'Laporan', icon: BarChart3, roles: ['owner', 'admin'] },
   { id: 'users', label: 'Staf Workshop', icon: UsersRound, roles: ['owner', 'admin'] },
+  { id: 'project-categories', label: 'Kategori Proyek', icon: Tags, roles: ['owner', 'admin'] },
   { id: 'settings', label: 'Pengaturan', icon: Settings, roles: ['owner', 'admin', 'workshop'] },
 ]
 
@@ -39,6 +41,7 @@ const sectionTitles: Record<Section, string> = {
   transactions: 'Transaksi',
   reports: 'Laporan',
   users: 'Staf Workshop',
+  'project-categories': 'Kategori Proyek',
   settings: 'Pengaturan',
 }
 

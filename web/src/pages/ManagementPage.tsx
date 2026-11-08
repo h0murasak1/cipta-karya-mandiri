@@ -22,6 +22,7 @@ interface Row {
     email?: string | null
     address?: string | null
     notes?: string | null
+    description?: string | null
     categoryId?: string | null
     projectId?: string | null
     customerId?: string | null
@@ -71,6 +72,7 @@ const configs: Record<ManagementProps['section'], { title: string; subtitle: str
   payments: { title: 'Pembayaran', subtitle: 'Catat DP, termin, dan pelunasan melalui proses atomik database.', add: 'Catat pembayaran', columns: ['Invoice', 'Tanggal', 'Metode', 'Referensi', 'Jumlah'] },
   transactions: { title: 'Transaksi', subtitle: 'Arus kas dari pembayaran invoice dan pencatatan manual.', add: 'Transaksi manual', columns: ['Keterangan', 'Tanggal', 'Kategori', 'Jenis', 'Jumlah'] },
   users: { title: 'Staf Workshop', subtitle: 'Kelola akun, akses, dan penugasan staf workshop.', add: 'Tambah staf', columns: ['Nama / email', 'Telepon', 'Peran', 'Status'] },
+  'project-categories': { title: 'Kategori Proyek', subtitle: 'Kelola pilihan kategori yang tersedia saat membuat proyek.', add: 'Kategori baru', columns: ['Nama kategori', 'Deskripsi', 'Status'] },
 }
 
 export function ManagementPage({ client, role, section, userId }: ManagementProps) {
@@ -89,7 +91,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
   const [notice, setNotice] = useState<string | null>(null)
   const [filter, setFilter] = useState('')
   const [page, setPage] = useState(1)
-  const [dialog, setDialog] = useState<'customer' | 'edit-customer' | 'project' | 'invoice' | 'transaction' | 'edit-transaction' | 'payment' | 'progress' | 'assignment' | 'user' | 'reset-user' | null>(null)
+  const [dialog, setDialog] = useState<'customer' | 'edit-customer' | 'project' | 'invoice' | 'transaction' | 'edit-transaction' | 'payment' | 'progress' | 'assignment' | 'user' | 'reset-user' | 'category' | 'edit-category' | null>(null)
   const [selectedProject, setSelectedProject] = useState<Option | null>(null)
   const [selectedUser, setSelectedUser] = useState<Option | null>(null)
   const [selectedRow, setSelectedRow] = useState<Row | null>(null)
@@ -124,6 +126,23 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
         return
       }
       nextCategories = (categoryResult.data ?? []).map((item) => ({ id: item.id, name: item.name }))
+    }
+
+    if (section === 'project-categories') {
+      const categoryResult = await client.from('project_categories').select('id, name, description, is_active').order('is_active', { ascending: false }).order('name')
+      if (categoryResult.error) {
+        setError(`Kategori proyek gagal dimuat: ${categoryResult.error.message}`)
+        setBusy(false)
+        return
+      }
+      nextRows = (categoryResult.data ?? []).map((item) => ({
+        id: item.id,
+        title: item.name,
+        detail: item.description ?? 'Tanpa deskripsi',
+        cells: [item.description ?? '—', item.is_active ? 'Aktif' : 'Diarsipkan'],
+        status: item.is_active ? 'active' : 'inactive',
+        editData: { description: item.description },
+      }))
     }
 
     if (section === 'transactions') {
@@ -351,6 +370,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
     else if (section === 'transactions') setDialog('transaction')
     else if (section === 'payments') setDialog('payment')
     else if (section === 'users') setDialog('user')
+    else if (section === 'project-categories') setDialog('category')
   }
 
   const issueInvoice = async (invoiceId: string) => {
@@ -400,6 +420,17 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
     if (updateError) setError(`Pelanggan gagal diarsipkan: ${updateError.message}`)
     else {
       setNotice('Pelanggan diarsipkan.')
+      await refresh()
+    }
+  }
+
+  const archiveProjectCategory = async (id: string) => {
+    if (!window.confirm('Arsipkan kategori proyek ini? Kategori tidak akan muncul untuk proyek baru, tetapi tetap tersimpan pada proyek lama.')) return
+    setError(null)
+    const { error: updateError } = await client.from('project_categories').update({ is_active: false }).eq('id', id)
+    if (updateError) setError(`Kategori proyek gagal diarsipkan: ${updateError.message}`)
+    else {
+      setNotice('Kategori proyek diarsipkan.')
       await refresh()
     }
   }
@@ -474,6 +505,10 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
                               <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-customer') }}><Edit3 size={14} />Edit</button>
                               <button className="text-button text-danger" onClick={() => void archiveCustomer(row.id)}>Arsipkan</button>
                             </>}
+                            {section === 'project-categories' && row.status === 'active' && <>
+                              <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-category') }}><Edit3 size={14} />Edit</button>
+                              <button className="text-button text-danger record-action-button" onClick={() => void archiveProjectCategory(row.id)}>Arsipkan</button>
+                            </>}
                             {section === 'invoices' && row.status !== 'cancelled' && (
                               <button className="text-button" disabled={issuingId === row.id} onClick={() => void issueInvoice(row.id)}>
                                 {issuingId === row.id ? 'Memproses...' : row.createdAt === 'token-active' ? 'Perbarui link invoice' : 'Generate link invoice'}
@@ -512,6 +547,8 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
 
       {dialog === 'customer' && <Dialog title="Pelanggan baru" onClose={() => setDialog(null)}><CustomerForm client={client} userId={userId} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'edit-customer' && selectedRow && <Dialog title="Edit pelanggan" description={selectedRow.title} onClose={() => setDialog(null)}><CustomerForm client={client} userId={userId} initial={selectedRow} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
+      {dialog === 'category' && <Dialog title="Kategori proyek baru" onClose={() => setDialog(null)}><ProjectCategoryForm client={client} userId={userId} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
+      {dialog === 'edit-category' && selectedRow && <Dialog title="Edit kategori proyek" description={selectedRow.title} onClose={() => setDialog(null)}><ProjectCategoryForm client={client} userId={userId} initial={selectedRow} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'project' && <Dialog title="Proyek baru" onClose={() => setDialog(null)}><ProjectForm client={client} userId={userId} customers={customers} categories={categories} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'invoice' && <Dialog title="Buat invoice" description="Invoice baru disimpan sebagai draft." onClose={() => setDialog(null)}><InvoiceForm client={client} userId={userId} customers={customers} projects={projects} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'transaction' && <Dialog title="Transaksi manual" onClose={() => setDialog(null)}><TransactionForm client={client} userId={userId} projects={projects} categories={categories} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
@@ -669,6 +706,36 @@ function ProjectForm({ client, userId, customers, categories, onDone, onCancel }
     <div className="form-grid"><Field label="Tanggal mulai" name="start_date" type="date" /><Field label="Target selesai" name="target_completion_date" type="date" /></div>
     <Field label="Deskripsi" name="description" />
     <p className="small muted">Kode proyek dibuat otomatis. Status awal: Menunggu konfirmasi.</p>
+    <FormFooter error={error} busy={busy} onCancel={onCancel} />
+  </form>
+}
+
+function ProjectCategoryForm({ client, initial, onDone, onCancel }: FormProps & { initial?: Row }) {
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const save = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setBusy(true)
+    setError(null)
+    const form = new FormData(event.currentTarget)
+    const payload = {
+      name: String(form.get('name') ?? '').trim(),
+      description: String(form.get('description') ?? '').trim() || null,
+    }
+    const result = initial
+      ? await client.from('project_categories').update(payload).eq('id', initial.id)
+      : await client.from('project_categories').insert(payload)
+    if (result.error) {
+      setError(`Kategori proyek gagal disimpan: ${result.error.message}`)
+    } else {
+      onDone(initial ? 'Kategori proyek berhasil diperbarui.' : 'Kategori proyek berhasil ditambahkan.')
+    }
+    setBusy(false)
+  }
+  return <form className="form-stack" onSubmit={(event) => void save(event)}>
+    <Field label="Nama kategori" name="name" required defaultValue={initial?.title} />
+    <Field label="Deskripsi" name="description" defaultValue={initial?.editData?.description ?? ''} />
+    <p className="small muted">Kategori aktif akan tersedia pada pilihan saat membuat proyek.</p>
     <FormFooter error={error} busy={busy} onCancel={onCancel} />
   </form>
 }
