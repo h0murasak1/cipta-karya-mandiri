@@ -6,6 +6,8 @@ import { Dialog } from '../components/Dialog'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useToast } from '../components/Toast'
 import { currency, date, statusLabel } from '../lib/format'
+import { compressImage } from '../lib/compressImage'
+import { openProjectReport, type ProjectReportData } from '../lib/projectReport'
 import type { AppRole, Section } from '../lib/types'
 
 interface Row {
@@ -473,6 +475,53 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
     }
   }
 
+  const downloadProjectReport = async (row: Row) => {
+      const reportWindow = window.open('', '_blank')
+      if (!reportWindow) {
+        toast('error', 'Popup laporan diblokir browser. Izinkan popup untuk mengunduh PDF.')
+        return
+      }
+      reportWindow.document.write('<p style="font:14px Arial;padding:24px">Menyiapkan laporan proyek...</p>')
+      const [projectResult, progressResult, photoResult] = await Promise.all([
+        client.from('projects').select('project_code, title, description, location, status, start_date, target_completion_date, contract_value, customers(name, address), project_categories(name)').eq('id', row.id).single(),
+        client.from('project_progress').select('id, progress_date, stage_name, progress_percent, description').eq('project_id', row.id).order('progress_date'),
+        client.from('project_photos').select('progress_id, storage_path, caption').eq('project_id', row.id).order('created_at'),
+      ])
+      if (projectResult.error || progressResult.error || photoResult.error || !projectResult.data) {
+        reportWindow.close()
+        toast('error', `Laporan gagal disiapkan: ${projectResult.error?.message ?? progressResult.error?.message ?? photoResult.error?.message ?? 'data proyek tidak ditemukan.'}`)
+        return
+      }
+      const photoRows = photoResult.data ?? []
+      const signed = await Promise.all(photoRows.map(async (photo) => {
+        const result = await client.storage.from('project-photos').createSignedUrl(photo.storage_path, 3600)
+        return { ...photo, url: result.data?.signedUrl ?? null }
+      }))
+      const customer = Array.isArray(projectResult.data.customers) ? projectResult.data.customers[0] : projectResult.data.customers
+      const category = Array.isArray(projectResult.data.project_categories) ? projectResult.data.project_categories[0] : projectResult.data.project_categories
+      const report: ProjectReportData = {
+        projectCode: projectResult.data.project_code,
+        title: projectResult.data.title,
+        description: projectResult.data.description,
+        location: projectResult.data.location,
+        status: projectResult.data.status,
+        startDate: projectResult.data.start_date,
+        targetDate: projectResult.data.target_completion_date,
+        contractValue: Number(projectResult.data.contract_value),
+        customerName: customer?.name ?? '—',
+        customerAddress: customer?.address ?? null,
+        categoryName: category?.name ?? null,
+        progress: (progressResult.data ?? []).map((progress) => ({
+          progressDate: progress.progress_date,
+          stageName: progress.stage_name,
+          progressPercent: Number(progress.progress_percent),
+          description: progress.description,
+          photos: signed.filter((photo) => photo.progress_id === progress.id && photo.url).map((photo) => ({ url: photo.url as string, caption: photo.caption })),
+        })),
+      }
+      openProjectReport(report, reportWindow)
+  }
+
   const saveDone = async (message?: string) => {
     setDialog(null)
     setSelectedProject(null)
@@ -518,6 +567,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
                           <div className="row-action-buttons">
                             {section === 'projects' && role !== 'workshop' && <button className="text-button project-action-button project-action-assignment" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode, assignedIds: row.assignmentIds }); setDialog('assignment') }}><UserRoundPlus size={14} />Atur staf</button>}
                             {section === 'projects' && <button className="text-button project-action-button project-action-progress" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode }); setDialog('progress') }}><ImagePlus size={14} />Tambah progres</button>}
+                            {section === 'projects' && row.status === 'completed' && <button className="text-button project-action-button" onClick={() => void downloadProjectReport(row)}>Laporan PDF</button>}
                             {section === 'customers' && <>
                               <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-customer') }}><Edit3 size={14} />Edit</button>
                               <button className="text-button text-danger" onClick={() => archiveCustomer(row.id, row.title)}>Arsipkan</button>
@@ -1002,9 +1052,17 @@ function ProgressForm({ client, userId, project, onDone, onCancel }: FormProps &
 
     const photo = form.get('photo')
     if (photo instanceof File && photo.size > 0) {
-      const ext = photo.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) || 'jpg'
+      let compressedPhoto: File
+      try {
+        compressedPhoto = await compressImage(photo)
+      } catch (compressionError) {
+        onDone(`Progres tersimpan. Foto gagal dikompres: ${compressionError instanceof Error ? compressionError.message : 'format foto tidak didukung.'}`)
+        setBusy(false)
+        return
+      }
+      const ext = 'jpg'
       const path = `${project.id}/${crypto.randomUUID()}.${ext}`
-      const upload = await client.storage.from('project-photos').upload(path, photo, { contentType: photo.type || 'application/octet-stream', upsert: false })
+      const upload = await client.storage.from('project-photos').upload(path, compressedPhoto, { contentType: 'image/jpeg', upsert: false })
       if (upload.error) {
         onDone(`Progres tersimpan. Foto gagal diunggah: ${upload.error.message}`)
         setBusy(false)
@@ -1034,7 +1092,7 @@ function ProgressForm({ client, userId, project, onDone, onCancel }: FormProps &
     <Field label="Tahapan pekerjaan" name="stage_name" required placeholder="Contoh: Fabrikasi" />
     <Field label="Persentase progres" name="progress_percent" type="number" min="0" max="100" step="0.01" required />
     <Field label="Catatan progres" name="description" />
-    <label className="upload-field"><ImagePlus size={17} /><span>Foto dokumentasi (opsional)</span><input type="file" name="photo" accept="image/*" /></label>
+    <label className="upload-field"><ImagePlus size={17} /><span>Foto dokumentasi (opsional)<small className="upload-hint">Otomatis diperkecil ke JPEG agar upload lebih ringan.</small></span><input type="file" name="photo" accept="image/*" /></label>
     <Field label="Keterangan foto" name="caption" />
     <FormFooter error={error} busy={busy} onCancel={onCancel} />
   </form>
