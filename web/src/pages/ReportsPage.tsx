@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { LoaderCircle, TrendingDown, TrendingUp } from 'lucide-react'
+import { FileDown, LoaderCircle, TrendingDown, TrendingUp } from 'lucide-react'
 import { currency, date, statusLabel } from '../lib/format'
+import { exportToCsv } from '../lib/export'
 
 interface ReportTransaction {
   id: string
@@ -74,10 +75,27 @@ export function ReportsPage({ client }: { client: SupabaseClient }) {
   }, [projects])
   const maxCategory = Math.max(1, ...categories.map(([, amount]) => amount))
 
+  const exportReport = () => {
+    const periodLabel = period === '30' ? '30hari' : period === '90' ? '90hari' : '12bulan'
+    const today = new Date().toISOString().slice(0, 10)
+    exportToCsv(
+      `laporan-transaksi-${periodLabel}-${today}`,
+      ['Tanggal', 'Keterangan', 'Kategori', 'Jenis', 'Nominal'],
+      transactions.map((t) => [
+        t.transaction_date,
+        t.description,
+        categoryName(t.transaction_categories) ?? 'Tanpa kategori',
+        t.transaction_type === 'income' ? 'Pemasukan' : 'Pengeluaran',
+        t.amount,
+      ]),
+    )
+  }
+
   return (
     <section className="reports-page">
       <div className="page-heading-row">
         <div><p className="eyebrow">Analisis</p><h1>Laporan</h1><p className="muted">Ringkasan kas berdasarkan transaksi tercatat, bukan laba akuntansi.</p></div>
+        {!busy && transactions.length > 0 && <button className="button button-secondary" onClick={exportReport}><FileDown size={16} />Unduh CSV</button>}
         <label className="period-select"><span>Periode</span><select value={period} onChange={(event) => setPeriod(event.target.value)}><option value="30">30 hari</option><option value="90">90 hari</option><option value="365">12 bulan</option></select></label>
       </div>
       {error && <div className="form-error" role="alert">{error}</div>}

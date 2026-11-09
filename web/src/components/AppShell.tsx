@@ -3,20 +3,23 @@ import {
   ArrowLeftRight,
   BarChart3,
   Bell,
+  ChevronUp,
   FileText,
   Hammer,
   LayoutDashboard,
   LogOut,
   Menu,
+  MoreHorizontal,
   Settings,
+  Tags,
   Users,
   UsersRound,
-  Tags,
   Wallet,
-  MoreHorizontal,
+  WifiOff,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useOnlineStatus } from '../lib/hooks'
 import type { AppRole, Profile, Section } from '../lib/types'
 
 const navigation: { id: Section; label: string; icon: typeof LayoutDashboard; roles: AppRole[] }[] = [
@@ -61,11 +64,19 @@ export function AppShell({
   children: React.ReactNode
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const online = useOnlineStatus()
+  const [showScrollTop, setShowScrollTop] = useState(false)
   const menu = navigation.filter((item) => item.roles.includes(role))
   const navigate = (id: Section) => {
     onNavigate(id)
     setMobileOpen(false)
   }
+
+  useEffect(() => {
+    const handleScroll = () => setShowScrollTop(window.scrollY > 400)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   return (
     <div className={`app-shell ${section === 'dashboard' ? 'app-shell-dashboard' : ''}`}>
@@ -94,17 +105,32 @@ export function AppShell({
         </div>
       </aside>
       <main className="main-area">
+        {!online && (
+          <div className="offline-banner" role="alert">
+            <WifiOff size={16} />
+            <span>Anda sedang offline. Beberapa fitur mungkin tidak tersedia.</span>
+          </div>
+        )}
         <header className="topbar">
           <button className="icon-button mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Buka menu" aria-expanded={mobileOpen}><Menu size={20} /></button>
           <div className="mobile-brand">CKM Workshop</div>
           <div className="breadcrumb"><span>Workspace</span><span className="breadcrumb-separator">/</span><strong>{sectionTitles[section]}</strong></div>
           <div className="topbar-actions">
-            <span className="date-chip"><ArrowDownLeft size={14} /> Data operasional</span>
+            <span className="date-chip"><ArrowDownLeft size={14} />Data operasional</span>
             <button className="icon-button notification-button" aria-label="Notifikasi"><Bell size={17} /><i /></button>
             <div className="top-avatar">{profile.full_name.trim().charAt(0).toUpperCase() || 'U'}</div>
           </div>
         </header>
         <div className="page-content">{children}</div>
+        {showScrollTop && (
+          <button
+            className="scroll-to-top"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            aria-label="Kembali ke atas"
+          >
+            <ChevronUp size={20} />
+          </button>
+        )}
       </main>
       <nav className="mobile-bottom-nav" aria-label="Navigasi cepat">
         {[

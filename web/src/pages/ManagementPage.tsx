@@ -3,6 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { Check, ChevronLeft, ChevronRight, Edit3, QrCode, Search, Trash2, UserRoundPlus, LoaderCircle, Plus, ImagePlus, UsersRound } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Dialog } from '../components/Dialog'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { useToast } from '../components/Toast'
 import { currency, date, statusLabel } from '../lib/format'
 import type { AppRole, Section } from '../lib/types'
 
@@ -80,6 +82,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
   const columns = section === 'projects' && role === 'workshop'
     ? config.columns.filter((column) => column !== 'Nilai kontrak')
     : config.columns
+  const { toast } = useToast()
   const [rows, setRows] = useState<Row[]>([])
   const [customers, setCustomers] = useState<Option[]>([])
   const [projects, setProjects] = useState<Option[]>([])
@@ -88,7 +91,6 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
   const [invoices, setInvoices] = useState<Option[]>([])
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [filter, setFilter] = useState('')
   const [page, setPage] = useState(1)
   const [dialog, setDialog] = useState<'customer' | 'edit-customer' | 'project' | 'invoice' | 'transaction' | 'edit-transaction' | 'payment' | 'progress' | 'assignment' | 'user' | 'reset-user' | 'category' | 'edit-category' | null>(null)
@@ -97,6 +99,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
   const [selectedRow, setSelectedRow] = useState<Row | null>(null)
   const [issuedLink, setIssuedLink] = useState<string | null>(null)
   const [issuingId, setIssuingId] = useState<string | null>(null)
+  const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void; danger?: boolean } | null>(null)
 
   const refresh = useCallback(async () => {
     setBusy(true)
@@ -361,7 +364,6 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
   const currentPage = Math.min(page, pageCount)
   const visibleRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const startAdd = () => {
-    setNotice(null)
     setError(null)
     setIssuedLink(null)
     if (section === 'projects') setDialog('project')
@@ -379,7 +381,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
     setIssuedLink(null)
     const { data: sessionData, error: sessionError } = await client.auth.getSession()
     if (sessionError || !sessionData.session) {
-      setError(`Sesi login tidak tersedia. Silakan masuk kembali${sessionError ? `: ${sessionError.message}` : '.'}`)
+      toast('error', `Sesi login tidak tersedia. Silakan masuk kembali${sessionError ? `: ${sessionError.message}` : '.'}`)
       setIssuingId(null)
       return
     }
@@ -389,18 +391,18 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
       headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
     })
     if (issueError) {
-      setError(`Token invoice gagal diterbitkan: ${await edgeFunctionErrorMessage(issueError)}`)
+      toast('error', `Token invoice gagal diterbitkan: ${await edgeFunctionErrorMessage(issueError)}`)
       setIssuingId(null)
       return
     }
     if (typeof data?.url !== 'string') {
-      setError('Token berhasil diproses tetapi URL publik tidak diterima. Periksa Edge Function.')
+      toast('error', 'Token berhasil diproses tetapi URL publik tidak diterima. Periksa Edge Function.')
       setIssuingId(null)
       return
     }
     setIssuedLink(data.url)
     setIssuingId(null)
-    setNotice('Link publik aktif. Jika diterbitkan ulang, token QR sebelumnya tidak berlaku lagi.')
+    toast('success', 'Link publik aktif. Jika diterbitkan ulang, token QR sebelumnya tidak berlaku lagi.')
     await refresh()
   }
 
@@ -408,49 +410,65 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
     if (!issuedLink) return
     try {
       await navigator.clipboard.writeText(issuedLink)
-      setNotice('Link invoice berhasil disalin.')
-      setError(null)
+      toast('success', 'Link invoice berhasil disalin.')
     } catch (copyError) {
-      setError(`Link invoice gagal disalin: ${copyError instanceof Error ? copyError.message : 'akses clipboard ditolak.'}`)
+      toast('error', `Link invoice gagal disalin: ${copyError instanceof Error ? copyError.message : 'akses clipboard ditolak.'}`)
     }
   }
 
-  const archiveCustomer = async (id: string) => {
-    const { error: updateError } = await client.from('customers').update({ is_active: false }).eq('id', id)
-    if (updateError) setError(`Pelanggan gagal diarsipkan: ${updateError.message}`)
-    else {
-      setNotice('Pelanggan diarsipkan.')
-      await refresh()
-    }
+  const archiveCustomer = (id: string, name: string) => {
+    setConfirm({
+      title: 'Arsipkan pelanggan',
+      message: `Arsipkan pelanggan "${name}"? Data tetap tersimpan tetapi tidak muncul pada daftar aktif.`,
+      onConfirm: async () => {
+        const { error: updateError } = await client.from('customers').update({ is_active: false }).eq('id', id)
+        if (updateError) toast('error', `Pelanggan gagal diarsipkan: ${updateError.message}`)
+        else {
+          toast('success', 'Pelanggan diarsipkan.')
+          await refresh()
+        }
+      },
+    })
   }
 
-  const archiveProjectCategory = async (id: string) => {
-    if (!window.confirm('Arsipkan kategori proyek ini? Kategori tidak akan muncul untuk proyek baru, tetapi tetap tersimpan pada proyek lama.')) return
-    setError(null)
-    const { error: updateError } = await client.from('project_categories').update({ is_active: false }).eq('id', id)
-    if (updateError) setError(`Kategori proyek gagal diarsipkan: ${updateError.message}`)
-    else {
-      setNotice('Kategori proyek diarsipkan.')
-      await refresh()
-    }
+  const archiveProjectCategory = (id: string, name: string) => {
+    setConfirm({
+      title: 'Arsipkan kategori proyek',
+      message: `Arsipkan kategori "${name}"? Kategori tidak akan muncul untuk proyek baru, tetapi tetap tersimpan pada proyek lama.`,
+      onConfirm: async () => {
+        setError(null)
+        const { error: updateError } = await client.from('project_categories').update({ is_active: false }).eq('id', id)
+        if (updateError) toast('error', `Kategori proyek gagal diarsipkan: ${updateError.message}`)
+        else {
+          toast('success', 'Kategori proyek diarsipkan.')
+          await refresh()
+        }
+      },
+    })
   }
 
-  const deleteTransaction = async (id: string) => {
-    if (!window.confirm('Hapus transaksi manual ini? Tindakan ini tidak dapat dibatalkan.')) return
-    setError(null)
-    const { error: deleteError } = await client.from('transactions').delete().eq('id', id)
-    if (deleteError) setError(`Transaksi gagal dihapus: ${deleteError.message}`)
-    else {
-      setNotice('Transaksi manual berhasil dihapus.')
-      await refresh()
-    }
+  const deleteTransaction = (id: string) => {
+    setConfirm({
+      title: 'Hapus transaksi',
+      message: 'Hapus transaksi manual ini? Tindakan ini tidak dapat dibatalkan.',
+      danger: true,
+      onConfirm: async () => {
+        setError(null)
+        const { error: deleteError } = await client.from('transactions').delete().eq('id', id)
+        if (deleteError) toast('error', `Transaksi gagal dihapus: ${deleteError.message}`)
+        else {
+          toast('success', 'Transaksi manual berhasil dihapus.')
+          await refresh()
+        }
+      },
+    })
   }
 
   const updateProjectStatus = async (id: string, status: string) => {
     const { error: updateError } = await client.from('projects').update({ status }).eq('id', id)
-    if (updateError) setError(`Status proyek gagal diperbarui: ${updateError.message}`)
+    if (updateError) toast('error', `Status proyek gagal diperbarui: ${updateError.message}`)
     else {
-      setNotice('Status proyek diperbarui.')
+      toast('success', 'Status proyek diperbarui.')
       await refresh()
     }
   }
@@ -458,7 +476,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
   const saveDone = async (message?: string) => {
     setDialog(null)
     setSelectedProject(null)
-    if (message) setNotice(message)
+    if (message) toast('success', message)
     await refresh()
   }
 
@@ -468,7 +486,6 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
         <div><p className="eyebrow">OPERASIONAL</p><h1>{config.title}</h1><p className="muted">{config.subtitle}</p></div>
         {config.add && role !== 'workshop' && <button className="button button-primary" onClick={startAdd}><Plus size={16} />{config.add}</button>}
       </div>
-      {notice && <div className="inline-success">{notice}</div>}
       {error && <div className="form-error" role="alert">{error}</div>}
       {issuedLink && (
         <div className="issued-link-panel">
@@ -503,11 +520,11 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
                             {section === 'projects' && <button className="text-button project-action-button project-action-progress" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode }); setDialog('progress') }}><ImagePlus size={14} />Tambah progres</button>}
                             {section === 'customers' && <>
                               <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-customer') }}><Edit3 size={14} />Edit</button>
-                              <button className="text-button text-danger" onClick={() => void archiveCustomer(row.id)}>Arsipkan</button>
+                              <button className="text-button text-danger" onClick={() => archiveCustomer(row.id, row.title)}>Arsipkan</button>
                             </>}
                             {section === 'project-categories' && row.status === 'active' && <>
                               <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-category') }}><Edit3 size={14} />Edit</button>
-                              <button className="text-button text-danger record-action-button" onClick={() => void archiveProjectCategory(row.id)}>Arsipkan</button>
+                              <button className="text-button text-danger record-action-button" onClick={() => archiveProjectCategory(row.id, row.title)}>Arsipkan</button>
                             </>}
                             {section === 'invoices' && row.status !== 'cancelled' && (
                               <button className="text-button" disabled={issuingId === row.id} onClick={() => void issueInvoice(row.id)}>
@@ -518,7 +535,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
                               ? <span className="row-action-locked">Dikelola dari pembayaran</span>
                               : section === 'transactions' && <>
                                 <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-transaction') }}><Edit3 size={14} />Edit</button>
-                                <button className="text-button text-danger record-action-button" onClick={() => void deleteTransaction(row.id)}><Trash2 size={14} />Hapus</button>
+                                <button className="text-button text-danger record-action-button" onClick={() => deleteTransaction(row.id)}><Trash2 size={14} />Hapus</button>
                               </>}
                             {section === 'users' && row.role === 'workshop' && <button className="text-button" onClick={() => {
                               setSelectedUser({ id: row.id, name: row.title, extra: row.detail })
@@ -558,6 +575,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
       {dialog === 'assignment' && selectedProject && <Dialog title="Atur staf proyek" description={`${selectedProject.name} · ${selectedProject.extra ?? ''}`} onClose={() => setDialog(null)}><AssignmentForm client={client} userId={userId} project={selectedProject} users={workshopUsers} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'user' && <Dialog title="Tambah staf Workshop" description="Akun dibuat aktif dan dapat langsung digunakan untuk masuk." onClose={() => setDialog(null)}><WorkshopUserForm client={client} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'reset-user' && selectedUser && <Dialog title="Reset password staf" description={`${selectedUser.name} · ${selectedUser.extra ?? ''}`} onClose={() => setDialog(null)}><ResetWorkshopPasswordForm client={client} user={selectedUser} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
+      {confirm && <ConfirmDialog title={confirm.title} message={confirm.message} danger={confirm.danger} onConfirm={() => { confirm.onConfirm(); setConfirm(null) }} onCancel={() => setConfirm(null)} />}
     </section>
   )
 }

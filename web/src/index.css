@@ -3134,3 +3134,1265 @@ body {
     padding-bottom: calc(5px + env(safe-area-inset-bottom));
   }
 }
+
+
+/* ===================================================================
+   UPGRADE: Toast Notification System
+   =================================================================== */
+
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 380px;
+  width: calc(100% - 48px);
+  pointer-events: none;
+}
+
+.toast-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  pointer-events: auto;
+  animation: toast-slide-in 0.3s ease-out;
+}
+
+.toast-item.toast-exit {
+  animation: toast-slide-out 0.28s ease-in forwards;
+}
+
+.toast-success { border-left: 3px solid #3b8a3e; }
+.toast-error   { border-left: 3px solid #c92a2a; }
+.toast-info    { border-left: 3px solid #1971c2; }
+
+.toast-success .toast-icon { color: #3b8a3e; }
+.toast-error .toast-icon   { color: #c92a2a; }
+.toast-info .toast-icon    { color: #1971c2; }
+
+.toast-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.toast-message {
+  flex: 1;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+.toast-close:hover {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 0 0 0 10px;
+  animation: toast-progress 4s linear forwards;
+}
+
+.toast-success .toast-progress { background: #3b8a3e; }
+.toast-error .toast-progress   { background: #c92a2a; }
+.toast-info .toast-progress    { background: #1971c2; }
+
+@keyframes toast-slide-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toast-slide-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(100%); }
+}
+
+@keyframes toast-progress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+@media (max-width: 760px) {
+  .toast-container {
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    right: 12px;
+    left: 12px;
+    max-width: 100%;
+    width: auto;
+  }
+}
+
+/* ===================================================================
+   UPGRADE: Dialog Animations
+   =================================================================== */
+
+.dialog-backdrop {
+  animation: ckm-dialog-backdrop-in 0.2s ease-out;
+}
+
+.dialog-card {
+  animation: ckm-dialog-card-in 0.25s ease-out;
+}
+
+@keyframes ckm-dialog-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes ckm-dialog-card-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ===================================================================
+   UPGRADE: Confirm Dialog
+   =================================================================== */
+
+.confirm-dialog-body {
+  display: grid;
+  gap: 16px;
+  padding: 24px 24px 20px;
+  text-align: center;
+  justify-items: center;
+}
+
+.confirm-dialog-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff0e7;
+  color: var(--action);
+}
+
+.confirm-dialog-message {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--muted);
+  max-width: 340px;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.button-danger {
+  background: #c92a2a;
+  color: #fff;
+  border-color: #c92a2a;
+}
+
+.button-danger:hover {
+  background: #a52222;
+  border-color: #a52222;
+}
+
+/* ===================================================================
+   UPGRADE: Offline Banner
+   =================================================================== */
+
+.offline-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  background: #fef3cd;
+  color: #664d03;
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 1px solid #e9d78e;
+}
+
+.offline-banner svg {
+  flex-shrink: 0;
+}
+
+/* ===================================================================
+   UPGRADE: Scroll-to-top Button
+   =================================================================== */
+
+.scroll-to-top {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 50;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.15s;
+  animation: scroll-top-in 0.25s ease-out;
+}
+
+.scroll-to-top:hover {
+  background: var(--canvas);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  transform: translateY(-2px);
+}
+
+@keyframes scroll-top-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 760px) {
+  .scroll-to-top {
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    right: 16px;
+  }
+}
+
+/* ===================================================================
+   UPGRADE: Error Boundary Icon
+   =================================================================== */
+
+.error-boundary-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff0e7;
+  color: var(--action);
+}
+
+
+/* ===================================================================
+   UPGRADE R2: Page Content Transitions
+   =================================================================== */
+
+.page-content {
+  animation: page-fade-in 0.3s ease-out;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===================================================================
+   UPGRADE R2: Skeleton Loading Pulse
+   =================================================================== */
+
+.skeleton {
+  background: linear-gradient(90deg, var(--canvas) 25%, #ece8df 50%, var(--canvas) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.skeleton-line {
+  height: 14px;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.skeleton-line-short { width: 60%; }
+.skeleton-line-tiny  { width: 35%; }
+
+.skeleton-card {
+  height: 80px;
+  border-radius: 10px;
+}
+
+@keyframes skeleton-pulse {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ===================================================================
+   UPGRADE R2: Enhanced Table Row Hover
+   =================================================================== */
+
+.data-panel tbody tr {
+  transition: background 0.15s ease;
+}
+
+.data-panel tbody tr:hover {
+  background: rgba(224, 90, 29, 0.04);
+}
+
+/* ===================================================================
+   UPGRADE R2: Stat Card Hover Effect
+   =================================================================== */
+
+.stat-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* ===================================================================
+   UPGRADE R2: Panel Link Hover
+   =================================================================== */
+
+.panel-link {
+  transition: color 0.15s ease;
+}
+
+.panel-link:hover {
+  color: var(--action);
+}
+
+/* ===================================================================
+   UPGRADE R2: Button Press Feedback
+   =================================================================== */
+
+.button {
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+
+.button:active {
+  transform: scale(0.97);
+}
+
+/* ===================================================================
+   UPGRADE R2: Focus Visible for Accessibility
+   =================================================================== */
+
+:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 0;
+  border-color: var(--action);
+}
+
+/* ===================================================================
+   UPGRADE R2: Progress Track Animation
+   =================================================================== */
+
+.progress-track > span {
+  transition: width 0.6s ease-out;
+}
+
+/* ===================================================================
+   UPGRADE R2: Chart Bar Hover
+   =================================================================== */
+
+.chart-bar {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform-origin: bottom;
+}
+
+.chart-bar:hover {
+  opacity: 0.85;
+  transform: scaleY(1.03);
+}
+
+/* ===================================================================
+   UPGRADE R2: Search Input Focus Glow
+   =================================================================== */
+
+.dashboard-search:focus-within,
+.search-control:focus-within {
+  box-shadow: 0 0 0 3px rgba(224, 90, 29, 0.12);
+  border-color: var(--action);
+}
+
+/* ===================================================================
+   UPGRADE R2: Login Page Animations
+   =================================================================== */
+
+.login-card {
+  animation: login-card-in 0.4s ease-out;
+}
+
+@keyframes login-card-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.login-aside {
+  animation: login-aside-in 0.5s ease-out;
+}
+
+@keyframes login-aside-in {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ===================================================================
+   UPGRADE R2: Empty State Animation
+   =================================================================== */
+
+.empty-state {
+  animation: empty-fade-in 0.4s ease-out;
+}
+
+@keyframes empty-fade-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ===================================================================
+   UPGRADE R2: Status Badge Hover
+   =================================================================== */
+
+.status-badge {
+  transition: transform 0.15s ease;
+}
+
+.status-badge:hover {
+  transform: scale(1.05);
+}
+
+/* ===================================================================
+   UPGRADE R2: Mobile Table Touch Feedback
+   =================================================================== */
+
+@media (max-width: 760px) {
+  .data-panel tbody tr {
+    transition: box-shadow 0.15s ease;
+  }
+
+  .data-panel tbody tr:active {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* ===================================================================
+   UPGRADE R2: Nav Item Transition
+   =================================================================== */
+
+.nav-item {
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* ===================================================================
+   UPGRADE R2: Print Styles
+   =================================================================== */
+
+@media print {
+  .sidebar,
+  .mobile-bottom-nav,
+  .topbar,
+  .toast-container,
+  .scroll-to-top,
+  .offline-banner,
+  .dashboard-actions,
+  .table-toolbar,
+  .table-pagination,
+  .row-actions {
+    display: none !important;
+  }
+
+  .main-area {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .page-content {
+    animation: none !important;
+  }
+
+  .panel {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}
+
+
+/* ===================================================================
+   UPGRADE R3: Premium Visual Polish — "Workshop Elegance"
+   Deep visual refinements for a professional, premium feel.
+   =================================================================== */
+
+/* ─── Custom Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(113, 107, 97, .22);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(113, 107, 97, .38);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(113, 107, 97, .22) transparent;
+}
+
+/* ─── Topbar: frosted-glass ─── */
+.topbar {
+  background: rgba(255, 253, 248, .72) !important;
+  backdrop-filter: blur(14px) saturate(1.6);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  border-bottom: 1px solid rgba(228, 221, 210, .55);
+  box-shadow: 0 1px 3px rgba(49, 39, 27, .04), 0 8px 24px rgba(49, 39, 27, .03) !important;
+}
+
+.breadcrumb strong {
+  background: linear-gradient(135deg, var(--action) 0%, #c74d18 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.date-chip {
+  background: rgba(232, 145, 82, .08) !important;
+  border-color: rgba(232, 145, 82, .18) !important;
+}
+
+.notification-button {
+  position: relative;
+}
+
+.notification-button i {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 1.5px solid var(--surface);
+  animation: ckm-pulse-dot 2.5s ease-in-out infinite;
+}
+
+@keyframes ckm-pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: .7; }
+}
+
+/* ─── Sidebar: subtle vertical gradient + nav polish ─── */
+.sidebar {
+  background: linear-gradient(180deg, #2a2a27 0%, #1e1e1c 100%) !important;
+}
+
+.brand-lockup {
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
+  margin-bottom: 4px;
+}
+
+.brand-mark {
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.brand-mark:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .28) !important;
+}
+
+.nav-caption {
+  text-transform: uppercase;
+  font-size: 10px !important;
+  letter-spacing: .14em;
+  opacity: .4;
+  margin: 16px 0 8px 12px;
+}
+
+.nav-item {
+  border-radius: 10px !important;
+  margin: 1px 0;
+  position: relative;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 0;
+  height: 60%;
+  transform: translateY(-50%);
+  background: #ffb05c;
+  border-radius: 0 3px 3px 0;
+  transition: width .2s ease, opacity .2s ease;
+  opacity: 0;
+}
+
+.nav-item-active::before {
+  width: 3px;
+  opacity: 1;
+}
+
+.nav-item-active {
+  background: rgba(255, 176, 92, .12) !important;
+  color: #ffcc88 !important;
+  box-shadow: none !important;
+}
+
+.nav-item:not(.nav-item-active):hover {
+  background: rgba(255, 255, 255, .05) !important;
+}
+
+/* ─── Profile block in sidebar ─── */
+.sidebar-bottom {
+  border-top: 1px solid rgba(255, 255, 255, .06);
+  padding-top: 12px;
+}
+
+.profile-block .avatar {
+  background: linear-gradient(135deg, #e05a1d 0%, #f09a42 100%) !important;
+  box-shadow: 0 4px 12px rgba(224, 90, 29, .25);
+  font-weight: 600;
+}
+
+.profile-logout-button {
+  opacity: .5;
+  transition: opacity .2s, color .2s, transform .2s;
+}
+
+.profile-logout-button:hover {
+  opacity: 1;
+  color: #ff8a65 !important;
+  transform: translateX(2px);
+}
+
+/* ─── Top avatar gradient ─── */
+.top-avatar {
+  background: linear-gradient(135deg, var(--action) 0%, #d88923 100%) !important;
+  color: white !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(224, 90, 29, .2);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.top-avatar:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(224, 90, 29, .3);
+}
+
+/* ─── Stat cards: accent stripe + icon bubble ─── */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px !important;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--action) 0%, #f09a42 60%, #d88923 100%);
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+
+.stat-card:hover::after {
+  opacity: 1;
+}
+
+.stat-card .stat-icon {
+  background: linear-gradient(135deg, rgba(224, 90, 29, .1) 0%, rgba(240, 154, 66, .08) 100%) !important;
+  border: 1px solid rgba(224, 90, 29, .12);
+  border-radius: 10px !important;
+  transition: transform .2s ease, background .2s ease;
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.08) rotate(-3deg);
+  background: linear-gradient(135deg, rgba(224, 90, 29, .15) 0%, rgba(240, 154, 66, .12) 100%) !important;
+}
+
+.stat-value {
+  background: linear-gradient(135deg, var(--ink) 0%, #4a463f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-card-dark .stat-value {
+  background: linear-gradient(135deg, #fff 0%, #e0d8cc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-card-dark::after {
+  background: linear-gradient(90deg, #ffb05c 0%, #e05a1d 100%);
+}
+
+/* ─── Panel headings: subtle accent ─── */
+.panel-heading strong,
+.panel-heading h2 {
+  position: relative;
+}
+
+.panel-heading .icon-button {
+  border-radius: 8px;
+  transition: background .15s, color .15s, transform .15s;
+}
+
+.panel-heading .icon-button:hover {
+  background: rgba(224, 90, 29, .08);
+  color: var(--action);
+  transform: rotate(15deg);
+}
+
+/* ─── Charts: gradient bars with rounded tops ─── */
+.income-bar {
+  background: linear-gradient(180deg, #3a3d35 0%, #252822 100%) !important;
+  border-radius: 4px 4px 0 0 !important;
+}
+
+.expense-bar {
+  background: linear-gradient(180deg, #f09a42 0%, #e05a1d 100%) !important;
+  border-radius: 4px 4px 0 0 !important;
+}
+
+.chart-month-label {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ─── Table: refined headers + subtle stripes ─── */
+.data-panel thead th {
+  background: linear-gradient(180deg, #faf6ef 0%, #f5f1e9 100%);
+  border-bottom: 2px solid #e4ddd2 !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.data-panel tbody tr:nth-child(even) {
+  background: rgba(244, 241, 234, .35);
+}
+
+.data-panel tbody tr:hover {
+  background: rgba(224, 90, 29, .04) !important;
+  box-shadow: inset 3px 0 0 var(--action);
+}
+
+.data-panel tbody td:first-child {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ─── Table pagination: cleaner ─── */
+.table-pagination {
+  border-top: 2px solid var(--line);
+  background: linear-gradient(180deg, #faf6ef 0%, var(--surface) 100%);
+}
+
+/* ─── Status badges: softer pill shapes ─── */
+.status-badge {
+  border-radius: 99px !important;
+  padding: 4px 11px !important;
+  font-size: 11px !important;
+  font-weight: 650;
+  letter-spacing: .01em;
+  border: 1px solid transparent;
+}
+
+/* ─── Buttons: refined with smooth shadows ─── */
+.button-primary {
+  background: linear-gradient(135deg, var(--action) 0%, #c74d18 100%) !important;
+  border-color: var(--action) !important;
+  box-shadow: 0 4px 14px rgba(224, 90, 29, .2), 0 1px 3px rgba(224, 90, 29, .12);
+  transition: all .2s ease;
+}
+
+.button-primary:hover {
+  background: linear-gradient(135deg, var(--action-hover) 0%, #a63c10 100%) !important;
+  box-shadow: 0 6px 20px rgba(224, 90, 29, .28), 0 2px 4px rgba(224, 90, 29, .15);
+  transform: translateY(-1px);
+}
+
+.button-primary:active {
+  transform: translateY(0) scale(.98) !important;
+  box-shadow: 0 2px 8px rgba(224, 90, 29, .18);
+}
+
+.button-secondary {
+  border-color: #d8cdbd !important;
+  transition: all .2s ease;
+}
+
+.button-secondary:hover {
+  background: #faf6ef !important;
+  border-color: #cbbba7 !important;
+  box-shadow: 0 2px 8px rgba(49, 39, 27, .06);
+}
+
+/* ─── Input fields: elegant borders + smooth focus ─── */
+input,
+select,
+textarea {
+  border-radius: 10px !important;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease !important;
+}
+
+input:hover:not(:focus):not(:disabled),
+select:hover:not(:focus):not(:disabled),
+textarea:hover:not(:focus):not(:disabled) {
+  border-color: #cbbba7;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--action) !important;
+  box-shadow: 0 0 0 3px rgba(224, 90, 29, .1), 0 1px 3px rgba(224, 90, 29, .06) !important;
+  background: white !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #b5ad9f;
+  font-style: italic;
+}
+
+/* ─── Dialogs: refined header and dividers ─── */
+.dialog-card {
+  border-radius: 16px !important;
+  box-shadow: 0 25px 70px rgba(49, 39, 27, .18), 0 8px 24px rgba(49, 39, 27, .08) !important;
+  border: 1px solid rgba(228, 221, 210, .6) !important;
+}
+
+.dialog-card > h2:first-child,
+.dialog-card > div:first-child > h2:first-child {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--ink) 0%, #4a463f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dialog-footer,
+.dialog-card > div:last-child {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* ─── Confirm dialog: polished ─── */
+.confirm-dialog-icon {
+  background: linear-gradient(135deg, #fff0e7 0%, #ffe2cc 100%) !important;
+  box-shadow: 0 4px 12px rgba(224, 90, 29, .12);
+}
+
+.button-danger {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  border-color: #dc2626 !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, .2);
+}
+
+.button-danger:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+  box-shadow: 0 6px 20px rgba(220, 38, 38, .28);
+}
+
+/* ─── Empty states: bigger presence ─── */
+.empty-state {
+  padding: 48px 24px !important;
+}
+
+.empty-state svg {
+  color: var(--action);
+  opacity: .7;
+  transition: transform .3s ease;
+}
+
+.empty-state:hover svg {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+.empty-state strong {
+  font-size: 16px !important;
+  color: var(--ink);
+}
+
+.empty-state p {
+  max-width: 320px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ─── Dashboard title: accent underline ─── */
+.dashboard-title h1 {
+  position: relative;
+  display: inline-block;
+}
+
+.dashboard-title h1::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 48px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--action), #f09a42);
+  border-radius: 99px;
+}
+
+/* ─── Progress bars: richer gradient + glow ─── */
+.progress-track {
+  background: rgba(228, 221, 210, .5) !important;
+  border-radius: 99px !important;
+  overflow: hidden;
+}
+
+.progress-track span {
+  background: linear-gradient(90deg, var(--action), #f09a42, #d88923) !important;
+  border-radius: 99px !important;
+  box-shadow: 0 0 8px rgba(224, 90, 29, .25);
+  position: relative;
+}
+
+.progress-track span::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(255,255,255,.25) 0%, transparent 100%);
+  border-radius: inherit;
+}
+
+/* ─── Login page: stronger depth ─── */
+.login-aside {
+  background: linear-gradient(170deg, #2e2e2b 0%, #1a1a18 60%, #151514 100%) !important;
+}
+
+.login-submit {
+  background: linear-gradient(135deg, var(--action) 0%, #c74d18 100%) !important;
+  box-shadow: 0 8px 22px rgba(224, 90, 29, .25) !important;
+  transition: all .25s ease;
+  font-weight: 600;
+}
+
+.login-submit:hover {
+  box-shadow: 0 10px 30px rgba(224, 90, 29, .35) !important;
+  transform: translateY(-1px);
+}
+
+.login-submit:active {
+  transform: translateY(0) scale(.98);
+}
+
+.login-card {
+  transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+
+/* ─── Mobile bottom nav: active pill indicator ─── */
+@media (max-width: 760px) {
+  .mobile-bottom-nav {
+    background: rgba(248, 246, 240, .92) !important;
+    backdrop-filter: blur(12px) saturate(1.5);
+    -webkit-backdrop-filter: blur(12px) saturate(1.5);
+  }
+
+  .mobile-bottom-nav button {
+    position: relative;
+    border-radius: 12px;
+    transition: color .2s ease, background .2s ease;
+  }
+
+  .mobile-bottom-nav .mobile-nav-active {
+    background: rgba(224, 90, 29, .08);
+  }
+
+  .mobile-bottom-nav .mobile-nav-active::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
+    background: var(--action);
+    border-radius: 0 0 3px 3px;
+  }
+}
+
+/* ─── Panels: refined corners + subtle inner glow ─── */
+.panel {
+  border-radius: 14px !important;
+  border: 1px solid rgba(228, 221, 210, .7) !important;
+}
+
+.chart-panel,
+.project-panel,
+.workshop-project-panel,
+.invoices-panel {
+  border-radius: 14px !important;
+  background: rgba(255, 253, 248, .92) !important;
+  backdrop-filter: blur(6px);
+}
+
+/* ─── Page heading: refined typography ─── */
+.page-heading-row h1 {
+  letter-spacing: -.03em;
+  line-height: 1.1;
+}
+
+.page-heading-row .eyebrow {
+  color: var(--action);
+  font-weight: 700;
+}
+
+/* ─── Invoices panel: subtle stripe on items ─── */
+.invoice-row:nth-child(even) {
+  background: rgba(244, 241, 234, .3);
+}
+
+.invoice-row {
+  transition: background .15s ease;
+  border-radius: 8px;
+}
+
+.invoice-row:hover {
+  background: rgba(224, 90, 29, .04);
+}
+
+/* ─── Search controls: refined ─── */
+.dashboard-search,
+.search-control {
+  border-radius: 10px !important;
+  border: 1px solid var(--line) !important;
+  transition: all .2s ease;
+}
+
+.dashboard-search:hover,
+.search-control:hover {
+  border-color: #cbbba7 !important;
+}
+
+.dashboard-search:focus-within,
+.search-control:focus-within {
+  background: white !important;
+  border-color: var(--action) !important;
+  box-shadow: 0 0 0 3px rgba(224, 90, 29, .1), 0 4px 12px rgba(224, 90, 29, .06) !important;
+}
+
+/* ─── Period select: polished dropdown ─── */
+.period-select {
+  border-radius: 10px !important;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.period-select:hover {
+  border-color: #cbbba7;
+}
+
+.period-select:focus {
+  border-color: var(--action);
+  box-shadow: 0 0 0 3px rgba(224, 90, 29, .1);
+}
+
+/* ─── Toast refinement ─── */
+.toast-item {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 253, 248, .95) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .12), 0 2px 8px rgba(0, 0, 0, .06) !important;
+}
+
+/* ─── Data note chip ─── */
+.dashboard-data-note {
+  background: rgba(255, 240, 231, .5);
+  border: 1px solid rgba(232, 145, 82, .15);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+/* ─── Subtle text selection color ─── */
+::selection {
+  background: rgba(224, 90, 29, .15);
+  color: var(--ink);
+}
+
+/* ─── Link hover effects ─── */
+.panel-link {
+  position: relative;
+}
+
+.panel-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: var(--action);
+  transition: width .25s ease;
+  border-radius: 99px;
+}
+
+.panel-link:hover::after {
+  width: 100%;
+}
+
+/* ─── Settings page cards ─── */
+.settings-card {
+  border-radius: 14px !important;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.settings-card:hover {
+  border-color: #d6c9b8;
+  box-shadow: 0 8px 24px rgba(49, 39, 27, .08);
+}
+
+/* ─── Report summary cards: colored top accent ─── */
+.report-summary-card {
+  border-radius: 14px !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.report-summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--action) 0%, #f09a42 100%);
+  opacity: .6;
+}
+
+.report-summary-card:hover::before {
+  opacity: 1;
+}
+
+/* ─── Assignment cards: refined ─── */
+.assignment-option {
+  border-radius: 10px !important;
+  transition: all .2s ease !important;
+}
+
+.assignment-option:hover {
+  box-shadow: 0 4px 12px rgba(49, 39, 27, .06);
+}
+
+.assignment-option-selected {
+  box-shadow: 0 4px 16px rgba(104, 160, 117, .12) !important;
+}
+
+/* ─── Backdrop: richer blur ─── */
+.dialog-backdrop {
+  background: rgba(28, 29, 26, .45) !important;
+  backdrop-filter: blur(6px) saturate(1.2);
+  -webkit-backdrop-filter: blur(6px) saturate(1.2);
+}
+
+/* ─── Icon buttons: consistent hover ─── */
+.icon-button {
+  border-radius: 10px !important;
+  transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+
+.icon-button:hover {
+  background: rgba(224, 90, 29, .08);
+  color: var(--action);
+}
+
+/* ─── Loading spinner: accent color ─── */
+.loading-spinner,
+.loader-circle {
+  color: var(--action);
+}
+
+/* ─── Mobile drawer: refined ─── */
+@media (max-width: 760px) {
+  .sidebar {
+    border-radius: 0 18px 18px 0 !important;
+    box-shadow: 16px 0 48px rgba(0, 0, 0, .2) !important;
+  }
+
+  .mobile-backdrop {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
+
+/* ─── Smooth page content transitions ─── */
+.page-content {
+  animation: ckm-page-in .35s cubic-bezier(.22, .8, .26, 1) both !important;
+}
+
+@keyframes ckm-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Reduced motion override for R3 ─── */
+@media (prefers-reduced-motion: reduce) {
+  .notification-button i,
+  .stat-card::after,
+  .progress-track span::after,
+  .panel-link::after,
+  .report-summary-card::before,
+  .dashboard-title h1::after,
+  .mobile-bottom-nav .mobile-nav-active::before,
+  .nav-item::before {
+    animation: none;
+    transition: none;
+  }
+
+  .page-content {
+    animation: none !important;
+  }
+}

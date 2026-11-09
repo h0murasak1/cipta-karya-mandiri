@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { LoaderCircle, Save } from 'lucide-react'
+import { useToast } from '../components/Toast'
 import type { AppRole } from '../lib/types'
 
 interface CompanySettings {
@@ -17,11 +18,11 @@ interface CompanySettings {
 }
 
 export function SettingsPage({ client, role, userId }: { client: SupabaseClient; role: AppRole; userId: string }) {
+  const { toast } = useToast()
   const [settings, setSettings] = useState<CompanySettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -45,7 +46,6 @@ export function SettingsPage({ client, role, userId }: { client: SupabaseClient;
     if (!canManageCompany || !settings) return
     setSaving(true)
     setError(null)
-    setNotice(null)
     const form = new FormData(event.currentTarget)
     const { error: saveError } = await client.from('company_settings').update({
       company_name: String(form.get('company_name')).trim(),
@@ -60,8 +60,8 @@ export function SettingsPage({ client, role, userId }: { client: SupabaseClient;
       invoice_footer: String(form.get('invoice_footer') || '').trim() || null,
       updated_by: userId,
     }).eq('id', true)
-    if (saveError) setError(`Pengaturan gagal disimpan: ${saveError.message}`)
-    else setNotice('Identitas perusahaan berhasil diperbarui.')
+    if (saveError) toast('error', `Pengaturan gagal disimpan: ${saveError.message}`)
+    else toast('success', 'Identitas perusahaan berhasil diperbarui.')
     setSaving(false)
   }
 
@@ -89,7 +89,6 @@ export function SettingsPage({ client, role, userId }: { client: SupabaseClient;
         </div>
         <Field label="Footer invoice" name="invoice_footer" value={settings.invoice_footer ?? ''} />
         {error && <div className="form-error" role="alert">{error}</div>}
-        {notice && <div className="inline-success">{notice}</div>}
         <div className="settings-actions"><button className="button button-primary" disabled={saving}>{saving ? <LoaderCircle className="spin" size={16} /> : <Save size={16} />}{saving ? 'Menyimpan...' : 'Simpan pengaturan'}</button></div>
       </form>}
       <PasswordChangeForm client={client} />
@@ -99,9 +98,9 @@ export function SettingsPage({ client, role, userId }: { client: SupabaseClient;
 }
 
 function PasswordChangeForm({ client }: { client: SupabaseClient }) {
+  const { toast } = useToast()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
 
   const changePassword = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -119,12 +118,11 @@ function PasswordChangeForm({ client }: { client: SupabaseClient }) {
 
     setSaving(true)
     setError(null)
-    setNotice(null)
     const { error: updateError } = await client.auth.updateUser({ password })
     if (updateError) setError(`Password gagal diubah: ${updateError.message}`)
     else {
       formElement.reset()
-      setNotice('Password berhasil diubah.')
+      toast('success', 'Password berhasil diubah.')
     }
     setSaving(false)
   }
@@ -136,7 +134,6 @@ function PasswordChangeForm({ client }: { client: SupabaseClient }) {
       <Field label="Konfirmasi password baru" name="password_confirmation" type="password" autoComplete="new-password" required minLength={8} maxLength={72} />
     </div>
     {error && <div className="form-error" role="alert">{error}</div>}
-    {notice && <div className="inline-success">{notice}</div>}
     <div className="settings-actions"><button className="button button-primary" disabled={saving}>{saving ? <LoaderCircle className="spin" size={16} /> : <Save size={16} />}{saving ? 'Menyimpan...' : 'Ubah password'}</button></div>
   </form>
 }

@@ -1,15 +1,21 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { AlertCircle, LoaderCircle } from 'lucide-react'
 import { AppShell } from './components/AppShell'
-import { DashboardPage } from './pages/DashboardPage'
-import { LoginPage } from './pages/LoginPage'
-import { ManagementPage } from './pages/ManagementPage'
-import { PublicInvoicePage } from './pages/PublicInvoicePage'
-import { ReportsPage } from './pages/ReportsPage'
-import { SettingsPage } from './pages/SettingsPage'
+import { KeyboardShortcuts } from './components/KeyboardShortcuts'
 import { configMessage, supabase } from './lib/supabase'
 import type { AppRole, Profile, Section } from './lib/types'
+
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
+const ManagementPage = lazy(() => import('./pages/ManagementPage').then(m => ({ default: m.ManagementPage })))
+const PublicInvoicePage = lazy(() => import('./pages/PublicInvoicePage').then(m => ({ default: m.PublicInvoicePage })))
+const ReportsPage = lazy(() => import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage })))
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+
+const PageFallback = () => (
+  <div className="loading-inline"><LoaderCircle className="spin" size={20} /> Memuat halaman...</div>
+)
 
 function ConfigurationPage({ message }: { message: string }) {
   return (
@@ -117,10 +123,21 @@ export default function App() {
   if (!authReady) return <LoadingPage />
 
   if (window.location.pathname.startsWith('/invoice/')) {
-    return <PublicInvoicePage client={client} token={window.location.pathname.slice('/invoice/'.length)} />
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <PublicInvoicePage client={client} token={window.location.pathname.slice('/invoice/'.length)} />
+      </Suspense>
+    )
   }
 
-  if (!session) return <LoginPage client={client} authError={profileError} />
+  if (!session) {
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <LoginPage client={client} authError={profileError} />
+      </Suspense>
+    )
+  }
+
   if (!profile) {
     return (
       <main className="setup-page">
@@ -154,7 +171,10 @@ export default function App() {
       onNavigate={setSection}
       onSignOut={() => void client.auth.signOut()}
     >
-      {page}
+      <Suspense fallback={<PageFallback />}>
+        {page}
+      </Suspense>
+      <KeyboardShortcuts onNavigate={setSection} />
     </AppShell>
   )
 }

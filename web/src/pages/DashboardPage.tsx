@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { CircleAlert, FolderKanban, LoaderCircle, Plus, Search } from 'lucide-react'
 import { currency, date, statusLabel } from '../lib/format'
+import { useDebounce } from '../lib/hooks'
 import type { AppRole, Section } from '../lib/types'
 
 interface DashboardTransaction {
@@ -44,6 +45,7 @@ export function DashboardPage({ client, role, onNavigate }: { client: SupabaseCl
   const [now] = useState(() => new Date())
   const [period, setPeriod] = useState(7)
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 250)
   const [transactions, setTransactions] = useState<DashboardTransaction[]>([])
   const [projects, setProjects] = useState<DashboardProject[]>([])
   const [invoices, setInvoices] = useState<DashboardInvoice[]>([])
@@ -167,7 +169,7 @@ export function DashboardPage({ client, role, onNavigate }: { client: SupabaseCl
   const totalExpense = selectedTransactions.filter((item) => item.transaction_type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0)
   const outstanding = invoices.reduce((sum, invoice) => sum + Number(invoice.outstanding_amount), 0)
   const maxBar = Math.max(1, ...monthly.flatMap((item) => [item.income, item.expense]))
-  const query = search.trim().toLocaleLowerCase('id-ID')
+  const query = debouncedSearch.trim().toLocaleLowerCase('id-ID')
   const filteredProjects = projects.filter((project) => [project.title, project.project_code, statusLabel(project.status)]
     .some((value) => value.toLocaleLowerCase('id-ID').includes(query)))
   const filteredInvoices = invoices.filter((invoice) => [
