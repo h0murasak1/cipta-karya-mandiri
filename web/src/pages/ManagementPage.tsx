@@ -734,7 +734,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
       )}
       <section className="panel data-panel">
         <div className="table-toolbar">
-          <div className="table-count"><strong>{filteredRows.length}</strong> {filter.trim() ? `dari ${rows.length} data` : 'data'}</div>
+          <div className="table-count" aria-live="polite">{busy ? 'Memuat…' : <><strong>{filteredRows.length}</strong> {filter.trim() ? `dari ${rows.length} data` : 'data'}</>}</div>
           <label className="search-control"><Search size={16} /><input value={filter} onChange={(event) => { setFilter(event.target.value); setPage(1) }} placeholder="Cari data..." /></label>
         </div>
         {busy ? <div className="loading-inline"><LoaderCircle className="spin" size={18} /> Memuat data...</div> : visibleRows.length === 0 ? (
