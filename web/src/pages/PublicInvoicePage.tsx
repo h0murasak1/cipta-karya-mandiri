@@ -3,6 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { AlertCircle, Check, Copy, FileDown, LoaderCircle } from 'lucide-react'
 import { currency, date, statusLabel } from '../lib/format'
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = { cash: 'Tunai', bank_transfer: 'Transfer bank', other: 'Lainnya' }
+
 interface BankAccount {
   bank_name: string
   account_name: string
@@ -140,7 +142,7 @@ export function PublicInvoicePage({ client, token }: { client: SupabaseClient; t
             ))}
           </div>
         </section>}
-        {invoice.payments.length > 0 && <section className="public-payment-history"><h2>Riwayat pembayaran</h2>{invoice.payments.map((payment, index) => <div key={`${payment.paid_at}-${index}`}><span>{date(payment.paid_at)} · {payment.payment_method}</span><strong>{currency(payment.amount)}</strong></div>)}</section>}
+        {invoice.payments.length > 0 && <section className="public-payment-history"><h2>Riwayat pembayaran</h2>{invoice.payments.map((payment, index) => <div key={`${payment.paid_at}-${index}`}><span>{date(payment.paid_at)} · {PAYMENT_METHOD_LABELS[payment.payment_method] ?? payment.payment_method}</span><strong>{currency(payment.amount)}</strong></div>)}</section>}
         <footer className="public-invoice-footer">{invoice.company.invoice_footer || 'Terima kasih atas kepercayaan Anda.'}</footer>
       </article>
     </main>

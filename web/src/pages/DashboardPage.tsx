@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { CircleAlert, FolderKanban, LoaderCircle, Plus, Search } from 'lucide-react'
+import { CircleAlert, FolderKanban, Hammer, LoaderCircle, Plus, ReceiptText, Search, TrendingDown, TrendingUp } from 'lucide-react'
 import { currency, date, statusLabel } from '../lib/format'
 import { useDebounce } from '../lib/hooks'
 import type { AppRole, Section } from '../lib/types'
@@ -209,20 +209,19 @@ export function DashboardPage({ client, role, onNavigate }: { client: SupabaseCl
           {!isWorkshop && <button className="button button-primary dashboard-create-button" onClick={() => onNavigate('projects')}><Plus size={16} /> Proyek baru</button>}
         </div>
       </div>
-      <div className="dashboard-data-note"><span className="live-dot" /> Data langsung <span>Ringkasan memakai data operasional tersimpan. Periode kas: {periodLabel}.</span></div>
       {error && <div className="inline-alert" role="alert"><CircleAlert size={17} />{error}</div>}
 
       {isWorkshop ? (
         <div className="stat-grid stat-grid-workshop">
-          <StatCard label="Proyek aktif" value={String(activeProjectCount)} detail="Proyek yang ditugaskan" />
-          <StatCard label="Total proyek terlihat" value={String(projects.length)} detail="Sesuai penugasan aktif" />
+          <StatCard icon={<Hammer size={17} />} label="Proyek aktif" value={String(activeProjectCount)} detail="Proyek yang ditugaskan" />
+          <StatCard icon={<FolderKanban size={17} />} label="Total proyek terlihat" value={String(projects.length)} detail="Sesuai penugasan aktif" />
         </div>
       ) : (
         <div className="stat-grid">
-          <StatCard label="Total pemasukan" value={currency(totalIncome)} detail={`Dalam ${periodLabel}`} />
-          <StatCard label="Total pengeluaran" value={currency(totalExpense)} detail={`Dalam ${periodLabel}`} />
-          <StatCard label="Proyek aktif" value={String(activeProjectCount)} detail={`${projects.length} proyek terbaru ditampilkan`} />
-          <StatCard label="Belum tertagih" value={currency(outstanding)} detail={`${invoices.length} invoice dengan sisa tagihan`} dark />
+          <StatCard icon={<TrendingUp size={17} />} tone="income" label="Total pemasukan" value={currency(totalIncome)} detail={`Dalam ${periodLabel}`} />
+          <StatCard icon={<TrendingDown size={17} />} tone="expense" label="Total pengeluaran" value={currency(totalExpense)} detail={`Dalam ${periodLabel}`} />
+          <StatCard icon={<Hammer size={17} />} label="Proyek aktif" value={String(activeProjectCount)} detail={`${projects.length} proyek terbaru ditampilkan`} />
+          <StatCard icon={<ReceiptText size={17} />} label="Belum tertagih" value={currency(outstanding)} detail={`${invoices.length} invoice dengan sisa tagihan`} dark />
         </div>
       )}
 
@@ -291,10 +290,10 @@ export function DashboardPage({ client, role, onNavigate }: { client: SupabaseCl
   )
 }
 
-function StatCard({ label, value, detail, dark }: { label: string; value: string; detail: string; dark?: boolean }) {
+function StatCard({ label, value, detail, dark, icon, tone }: { label: string; value: string; detail: string; dark?: boolean; icon: React.ReactNode; tone?: 'income' | 'expense' }) {
   return (
     <article className={`stat-card ${dark ? 'stat-card-dark' : ''}`}>
-      <div className="stat-top"><span>{label}</span></div>
+      <div className="stat-top"><span>{label}</span><span className={`stat-icon ${tone ? `stat-icon-${tone}` : ''}`} aria-hidden="true">{icon}</span></div>
       <strong className="stat-value">{value}</strong>
       <span className="stat-detail">{detail}</span>
     </article>

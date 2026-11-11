@@ -1,0 +1,489 @@
+/* ===================================================================
+   CKM Clean — the current visual layer, loaded after index.css.
+
+   Direction: calm and roomy. One flat warm canvas, white surfaces with a
+   hairline border, almost no shadows or gradients, and orange reserved
+   for the primary action and the active state.
+   =================================================================== */
+
+:root {
+  --ink: #1f1d19;
+  --muted: #6f695f;
+  --subtle: #8d867a;
+  --line: #e8e3da;
+  --line-soft: #f1ede5;
+  --canvas: #f6f4ef;
+  --surface: #ffffff;
+  --panel: #ffffff;
+  --action: #d9541a;
+  --action-hover: #b94312;
+  --action-soft: #fdf1ea;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(31, 29, 25, .04);
+  --shadow-raised: 0 10px 28px rgba(31, 29, 25, .08);
+}
+
+body {
+  background: var(--canvas);
+  background-image: none;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+/* ─── Shell ─── */
+.topbar {
+  background: rgba(246, 244, 239, .86);
+  border-bottom: 1px solid var(--line);
+  box-shadow: none;
+  backdrop-filter: blur(10px);
+}
+
+.breadcrumb { font-size: 13px; }
+
+.topbar-user {
+  display: grid;
+  gap: 1px;
+  text-align: right;
+  line-height: 1.25;
+}
+
+.topbar-user strong { color: var(--ink); font-size: 13px; font-weight: 600; }
+.topbar-user small { color: var(--subtle); font-size: 11px; }
+
+.top-avatar {
+  background: var(--ink);
+  background-image: none;
+  box-shadow: none;
+  color: #fff;
+}
+
+.sidebar {
+  background: #1c1b18;
+  background-image: none;
+  border-right: 0;
+}
+
+.nav-item { border-radius: 9px; font-size: 13.5px; }
+
+.page-content { padding-top: 28px; }
+
+.page-heading-row { margin-bottom: 22px; padding-bottom: 0; border-bottom: 0; }
+.page-heading-row h1 { font-size: clamp(24px, 2.2vw, 28px); letter-spacing: -.02em; }
+.page-heading-row .muted { font-size: 14px; }
+.page-heading-row h1::after, .dashboard-title h1::after { display: none; }
+.eyebrow { font-size: 11px; letter-spacing: .1em; }
+
+/* ─── Surfaces ─── */
+.panel,
+.stat-card,
+.report-summary-card {
+  background: var(--surface);
+  background-image: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.panel:hover, .stat-card:hover, .report-summary-card:hover { transform: none; box-shadow: var(--shadow); }
+.stat-card::before, .stat-card::after, .report-summary-card::before, .panel::before { display: none; }
+
+.panel-heading h2 { font-size: 15px; }
+.panel-heading h2::before, .panel-heading h2::after { display: none; }
+
+.panel-link {
+  padding: 5px 10px;
+  color: var(--action);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.panel-link:hover { background: var(--action-soft); border-color: transparent; text-decoration: none; }
+
+/* ─── Buttons & fields ─── */
+.button {
+  border-radius: 10px;
+  box-shadow: none;
+  font-size: 13.5px;
+}
+
+.button-primary {
+  background: var(--action);
+  background-image: none;
+  border-color: var(--action);
+  box-shadow: none;
+}
+
+.button-primary:hover { background: var(--action-hover); border-color: var(--action-hover); box-shadow: none; transform: none; }
+.button-secondary { background: var(--surface); border-color: var(--line); color: var(--ink); }
+.button-secondary:hover { background: #faf8f4; border-color: #d6cec1; }
+
+input, select, textarea {
+  background: var(--surface);
+  border-color: #ddd6ca;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--action);
+  box-shadow: 0 0 0 3px rgba(217, 84, 26, .14);
+  outline: none;
+}
+
+.field-label { color: #4a463f; font-size: 12.5px; font-weight: 600; }
+
+.status-badge {
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.status-badge:hover { transform: none; }
+.status-active, .status-income { color: #1f6b3a; background: #e6f4ea; border-color: transparent; }
+.status-inactive { color: #6f695f; background: #efebe4; border-color: transparent; }
+.status-expense { color: #a3352b; background: #fdeae7; border-color: transparent; }
+
+/* ─── Dashboard ─── */
+.stat-grid { gap: 14px; }
+.stat-card { padding: 18px; }
+.stat-top { align-items: flex-start; color: var(--muted); font-size: 13px; font-weight: 500; }
+.stat-value { margin-top: 10px; font-size: clamp(20px, 1.9vw, 26px); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.stat-detail { color: var(--subtle); font-size: 12px; }
+
+.stat-card .stat-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  place-items: center;
+  color: var(--muted);
+  background: #f4f1eb;
+  background-image: none;
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+.stat-card:hover .stat-icon { transform: none; }
+.stat-card .stat-icon-income { color: #1f6b3a; background: #e6f4ea; }
+.stat-card .stat-icon-expense { color: #a3352b; background: #fdeae7; }
+
+.stat-card-dark { background: var(--ink); border-color: var(--ink); }
+.stat-card-dark .stat-top, .stat-card-dark .stat-detail { color: #b8b2a7; }
+.stat-card-dark .stat-icon { color: #f6c4a8; background: rgba(255, 255, 255, .1); }
+
+.dashboard-search, .period-select, .search-control { box-shadow: none; }
+
+.chart-bar { border-radius: 5px 5px 0 0; box-shadow: none; }
+.income-bar { background: var(--ink); background-image: none; }
+.expense-bar { background: var(--action); background-image: none; }
+.legend-income { background: var(--ink); }
+.legend-expense { background: var(--action); }
+
+.project-progress-item { padding: 12px 0; background: transparent; border: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; }
+.project-progress-item:last-child { border-bottom: 0; }
+.project-progress-item:hover { background: transparent; transform: none; }
+.project-progress-heading strong { font-size: 13.5px; }
+.project-progress-heading small, .project-target { color: var(--subtle); font-size: 12px; }
+
+.progress-track { height: 6px; background: #ece7de; border-radius: 99px; box-shadow: none; }
+.progress-track span { background: var(--action); background-image: none; box-shadow: none; }
+.progress-track span::after { display: none; }
+
+/* Plain tables (dashboard, reports) */
+.panel table { font-size: 13px; }
+.panel thead th { color: var(--subtle); background: transparent; border-bottom: 1px solid var(--line); font-size: 11.5px; font-weight: 600; letter-spacing: .02em; text-transform: none; }
+.panel tbody td { border-bottom: 1px solid var(--line-soft); }
+.panel tbody tr:last-child td { border-bottom: 0; }
+.panel tbody tr:hover { background: #fbfaf7; box-shadow: none; transform: none; }
+
+/* ─── Management lists: record cards ─── */
+.management-page .data-panel {
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.management-page .table-toolbar {
+  padding: 0 0 14px;
+  background: transparent;
+  border: 0;
+}
+
+.table-count { color: var(--muted); font-size: 13px; }
+.table-count strong { color: var(--ink); font-weight: 650; }
+
+.management-page .search-control {
+  width: min(100%, 320px);
+  background: var(--surface);
+  border: 1px solid #ddd6ca;
+  border-radius: 10px;
+}
+
+.record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.record-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+
+.record-card:hover { border-color: #d9d1c4; box-shadow: var(--shadow-raised); }
+
+.record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.record-heading { min-width: 0; }
+
+.record-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -.005em;
+  overflow-wrap: anywhere;
+}
+
+.record-sub {
+  margin: 3px 0 0;
+  color: var(--subtle);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.record-head .status-badge { flex: 0 0 auto; margin-top: 1px; }
+
+.record-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin: 0;
+}
+
+.record-meta dt {
+  margin-bottom: 2px;
+  color: var(--subtle);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.record-meta dd {
+  margin: 0;
+  color: #37342e;
+  font-size: 13.5px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.record-meta-amount dd {
+  color: var(--ink);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.record-actions:not(:has(button, select, .row-action-locked)) { display: none; }
+
+.record-actions .row-action-buttons,
+.record-actions .invoice-action-btns { display: contents; }
+
+.record-actions .row-action-status {
+  width: auto;
+  min-width: 0;
+  min-height: 36px;
+  flex: 1 1 160px;
+  background-color: var(--surface);
+  border-color: #ddd6ca;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.record-actions .text-button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  color: #37342e;
+  background: var(--surface);
+  border: 1px solid #ddd6ca;
+  border-radius: 9px;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.record-actions .text-button:hover { background: #faf8f4; border-color: #cfc6b8; text-decoration: none; transform: none; }
+.record-actions .text-button:disabled { cursor: progress; opacity: .6; }
+.record-actions .text-danger { color: #a3352b; }
+.record-actions .text-danger:hover { background: #fdeae7; border-color: #f1c3bc; }
+
+.record-actions .project-action-progress {
+  color: #fff;
+  background: var(--action);
+  border-color: var(--action);
+}
+
+.record-actions .project-action-progress:hover { color: #fff; background: var(--action-hover); border-color: var(--action-hover); }
+
+.record-actions .button-wa-action {
+  color: #0e7250 !important;
+  background: #e9f7f0 !important;
+  border: 1px solid #b9e6d1 !important;
+  border-radius: 9px !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  box-shadow: none !important;
+}
+
+.record-actions .button-wa-action:hover { color: #fff !important; background: #1faa5c !important; border-color: #1faa5c !important; transform: none; }
+
+.record-actions .row-action-locked { min-height: 36px; background: #f6f4ef; border-color: var(--line); border-radius: 9px; font-size: 12.5px; }
+
+.management-page .table-pagination {
+  margin-top: 16px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.management-page .empty-state,
+.management-page .loading-inline {
+  min-height: 220px;
+  background: var(--surface);
+  border: 1px dashed #d9d1c4;
+  border-radius: var(--radius);
+  font-size: 13.5px;
+}
+
+.management-page .loading-inline { justify-content: center; border-style: solid; border-color: var(--line); }
+
+.issued-link-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+/* ─── Dialogs ─── */
+.dialog-backdrop { background: rgba(31, 29, 25, .45); backdrop-filter: blur(3px); }
+.dialog-card { background: var(--surface); border: 0; border-radius: 16px; box-shadow: 0 24px 70px rgba(31, 29, 25, .22); }
+.dialog-heading h2 { font-size: 17px; }
+.dialog-heading p { font-size: 13px; }
+
+/* ─── Settings ─── */
+.settings-panel { padding: 22px; }
+.bank-account-card { background: #faf8f4; border-color: var(--line); }
+.bank-account-card:hover { border-color: var(--line); box-shadow: none; }
+
+/* ─── Login ─── */
+.login-aside { background: #1c1b18; background-image: none; }
+.login-aside::before, .login-aside::after { display: none !important; }
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login-brand img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, .14);
+}
+
+.login-brand span { display: grid; line-height: 1.25; }
+.login-brand strong { color: #fff; font-size: 15px; font-weight: 650; }
+.login-brand small { color: #a9a398; font-size: 12px; }
+
+.login-card { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-raised); }
+.login-form-side { background: var(--canvas); background-image: none; }
+
+/* ─── Public invoice ─── */
+.public-invoice-page { background: var(--canvas); background-image: none; }
+.public-invoice-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-raised); }
+.public-bank-details, .public-invoice-note { background: #faf8f4; border-color: var(--line); border-radius: 12px; }
+.bank-account-item { border-color: var(--line); border-radius: 10px; }
+.invoice-outstanding { padding: 10px 12px; background: var(--action-soft); border-radius: 10px; }
+.invoice-outstanding strong { color: var(--action-hover); }
+
+/* ─── Small screens ─── */
+@media (max-width: 760px) {
+  .topbar-user { display: none; }
+  .record-grid { grid-template-columns: 1fr; gap: 12px; }
+  .record-card { padding: 16px; }
+  .management-page .table-toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
+  .management-page .search-control { width: 100%; }
+  .record-actions .text-button, .record-actions .row-action-status { min-height: 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .record-card { transition: none; }
+}
+
+@media print {
+  .public-invoice-card { border: 0; box-shadow: none; }
+  .invoice-outstanding { background: transparent; padding: 0; }
+}
+
+/* Spacing under page headings (earlier layers zero it per page). */
+.dashboard-page > .page-heading-row,
+.management-page > .page-heading-row,
+.reports-page > .page-heading-row,
+.settings-page > .page-heading-row { margin-bottom: 22px; }
+
+/* Earlier layers restyle these inside their own mobile media queries. */
+.button-primary { color: #fff !important; background: var(--action) !important; border-color: var(--action) !important; }
+.button-primary:hover:not(:disabled) { background: var(--action-hover) !important; border-color: var(--action-hover) !important; }
+
+@media (max-width: 760px) {
+  .management-page .data-panel {
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .page-heading-row { padding-bottom: 0 !important; border-bottom: 0 !important; }
+
+  .stat-card { padding: 14px; }
+  .stat-value { overflow: visible; font-size: 17px; white-space: normal; text-overflow: clip; overflow-wrap: anywhere; }
+}

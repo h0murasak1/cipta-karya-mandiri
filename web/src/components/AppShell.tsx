@@ -1,8 +1,6 @@
 import {
-  ArrowDownLeft,
   ArrowLeftRight,
   BarChart3,
-  Bell,
   ChevronUp,
   FileText,
   Hammer,
@@ -116,9 +114,8 @@ export function AppShell({
           <div className="mobile-brand">CKM Workshop</div>
           <div className="breadcrumb"><span>Workspace</span><span className="breadcrumb-separator">/</span><strong>{sectionTitles[section]}</strong></div>
           <div className="topbar-actions">
-            <span className="date-chip"><ArrowDownLeft size={14} />Data operasional</span>
-            <button className="icon-button notification-button" aria-label="Notifikasi"><Bell size={17} /><i /></button>
-            <div className="top-avatar">{profile.full_name.trim().charAt(0).toUpperCase() || 'U'}</div>
+            <span className="topbar-user"><strong>{profile.full_name || 'Pengguna'}</strong><small>{role === 'owner' ? 'Owner' : role === 'admin' ? 'Admin' : 'Workshop'}</small></span>
+            <div className="top-avatar" aria-hidden="true">{profile.full_name.trim().charAt(0).toUpperCase() || 'U'}</div>
           </div>
         </header>
         <div className="page-content">{children}</div>

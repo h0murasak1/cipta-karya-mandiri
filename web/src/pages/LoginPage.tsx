@@ -20,8 +20,9 @@ export function LoginPage({ client, authError }: { client: SupabaseClient; authE
   return (
     <main className="login-page">
       <section className="login-aside">
+        <div className="login-brand"><img src="/logo-ckm.jpeg" alt="" /><span><strong>Cipta Karya Mandiri</strong><small>Workshop</small></span></div>
         <div className="login-message">
-          <p className="eyebrow eyebrow-light">Cipta Karya Mandiri</p>
+          <p className="eyebrow eyebrow-light">Aplikasi internal</p>
           <h1>Sistem manajemen workshop</h1>
           <p>Kelola proyek, progres pekerjaan, transaksi, dan invoice dalam satu aplikasi internal.</p>
           <div className="login-points">

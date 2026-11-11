@@ -97,6 +97,14 @@ const PROJECT_STATUSES = ['waiting_confirmation', 'waiting_work', 'in_progress',
 /** Sections whose first cell shows `row.detail` as a secondary line (it is not already a column there). */
 const SUBLINE_SECTIONS: ReadonlySet<ManagementProps['section']> = new Set(['transactions', 'users'])
 
+/** Columns shown elsewhere on the card (as the line under the title) rather than in the detail grid. */
+const HIDDEN_META_COLUMNS: ReadonlySet<string> = new Set(['Kode'])
+
+/** Money columns get tabular, emphasised figures. */
+const AMOUNT_COLUMNS: ReadonlySet<string> = new Set(['Nilai kontrak', 'Total', 'Sisa', 'Jumlah'])
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = { cash: 'Tunai', bank_transfer: 'Transfer bank', other: 'Lainnya' }
+
 const configs: Record<ManagementProps['section'], { title: string; subtitle: string; add?: string; columns: string[] }> = {
   projects: { title: 'Proyek workshop', subtitle: 'Pantau pekerjaan, jadwal, dan pembaruan progres.', add: 'Proyek baru', columns: ['Nama proyek', 'Kode', 'Pelanggan / kategori', 'Target selesai', 'Nilai kontrak', 'Staf workshop', 'Status'] },
   customers: { title: 'Pelanggan', subtitle: 'Kelola data dan kontak pelanggan workshop.', add: 'Pelanggan baru', columns: ['Nama pelanggan', 'Telepon', 'Email', 'Kode', 'Status'] },
@@ -283,6 +291,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
         title: item.name,
         detail: item.phone ?? 'Tanpa nomor telepon',
         cells: [item.name, item.phone ?? '—', item.email ?? '—', item.customer_code ?? '—', 'Aktif'],
+        status: 'active',
         editData: { phone: item.phone, email: item.email, address: item.address, notes: item.notes },
       }))
     } else if (section === 'invoices') {
@@ -364,7 +373,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
             cells: [
               inv?.invoice_number ?? 'Invoice',
               date(item.paid_at),
-              item.payment_method,
+              PAYMENT_METHOD_LABELS[item.payment_method] ?? item.payment_method,
               item.reference_number ?? '—',
               currency(item.amount),
             ],
@@ -725,7 +734,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
       )}
       <section className="panel data-panel">
         <div className="table-toolbar">
-          <div className="table-count">{filteredRows.length} data</div>
+          <div className="table-count"><strong>{filteredRows.length}</strong> {filter.trim() ? `dari ${rows.length} data` : 'data'}</div>
           <label className="search-control"><Search size={16} /><input value={filter} onChange={(event) => { setFilter(event.target.value); setPage(1) }} placeholder="Cari data..." /></label>
         </div>
         {busy ? <div className="loading-inline"><LoaderCircle className="spin" size={18} /> Memuat data...</div> : visibleRows.length === 0 ? (
@@ -739,131 +748,132 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
             {filter.trim() && !error && <button type="button" className="text-button" onClick={() => setFilter('')}>Hapus pencarian</button>}
           </div>
         ) : (
-          <div className="table-scroll">
-            <table>
-              <thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}<th className="actions-heading">Aksi</th></tr></thead>
-              <tbody>
-                {visibleRows.map((row) => (
-                  <tr key={row.id}>
-                    {row.cells.map((cell, index) => {
-                      const isStatusColumn = columns[index] === 'Status' || columns[index] === 'Jenis'
-                      return (
-                        <td data-label={columns[index]} key={columns[index] ?? index}>
-                          {index === 0 ? <>
-                            <span className="strong-cell">{cell}</span>
-                            {SUBLINE_SECTIONS.has(section) && row.detail && <small className="table-subline">{row.detail}</small>}
-                          </> : isStatusColumn && row.status ? <StatusBadge value={row.status} text={cell} /> : cell}
-                        </td>
-                      )
-                    })}
-                    <td className="row-actions">
-                        <div className="row-action-group">
-                          {section === 'projects' && canManage && (
-                            <select
-                              aria-label={`Ubah status proyek ${row.title}`}
-                              className="row-action-status"
-                              value={row.status}
-                              disabled={statusUpdatingId !== null}
-                              onChange={(event) => void updateProjectStatus(row.id, event.target.value)}
-                            >
-                              {PROJECT_STATUSES.map((value) => <option value={value} key={value}>{statusLabel(value)}</option>)}
-                            </select>
-                          )}
-                          <div className="row-action-buttons">
-                            {section === 'projects' && <>
-                              {canManage && (
-                                <button
-                                  type="button"
-                                  className="text-button project-action-button project-action-assignment"
-                                  onClick={() => {
-                                    setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode, assignedIds: row.assignmentIds })
-                                    setDialog('assignment')
-                                  }}
-                                >
-                                  <UsersRound size={14} />Staf
-                                </button>
-                              )}
+          <ul className="record-grid">
+            {visibleRows.map((row) => {
+              const statusIndex = columns.findIndex((column) => column === 'Status' || column === 'Jenis')
+              const subline = section === 'projects' ? row.projectCode : SUBLINE_SECTIONS.has(section) ? row.detail : ''
+              return (
+                <li className="record-card" key={row.id}>
+                  <header className="record-head">
+                    <div className="record-heading">
+                      <h2 className="record-title">{row.cells[0]}</h2>
+                      {subline && <p className="record-sub">{subline}</p>}
+                    </div>
+                    {statusIndex >= 0 && row.status && <StatusBadge value={row.status} text={row.cells[statusIndex]} />}
+                  </header>
+                  <dl className="record-meta">
+                    {row.cells.map((cell, index) => index === 0 || index === statusIndex || HIDDEN_META_COLUMNS.has(columns[index]) ? null : (
+                      <div className={AMOUNT_COLUMNS.has(columns[index]) ? 'record-meta-amount' : undefined} key={columns[index] ?? index}>
+                        <dt>{columns[index]}</dt>
+                        <dd>{cell}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <footer className="record-actions">
+                    {section === 'projects' && canManage && (
+                      <select
+                        aria-label={`Ubah status proyek ${row.title}`}
+                        className="row-action-status"
+                        value={row.status}
+                        disabled={statusUpdatingId !== null}
+                        onChange={(event) => void updateProjectStatus(row.id, event.target.value)}
+                      >
+                        {PROJECT_STATUSES.map((value) => <option value={value} key={value}>{statusLabel(value)}</option>)}
+                      </select>
+                    )}
+                    <div className="row-action-buttons">
+                      {section === 'projects' && <>
+                        {canManage && (
+                          <button
+                            type="button"
+                            className="text-button project-action-button project-action-assignment"
+                            onClick={() => {
+                              setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode, assignedIds: row.assignmentIds })
+                              setDialog('assignment')
+                            }}
+                          >
+                            <UsersRound size={14} />Staf
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="text-button project-action-button project-action-progress"
+                          onClick={() => {
+                            setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode })
+                            setDialog('progress')
+                          }}
+                        >
+                          <Plus size={14} />Progres
+                        </button>
+                      </>}
+                      {section === 'projects' && row.status === 'completed' && <button type="button" className="text-button project-action-button" onClick={() => void downloadProjectReport(row)}><FileText size={14} />Laporan PDF</button>}
+                      {section === 'customers' && <>
+                        <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-customer') }}><Edit3 size={14} />Edit</button>
+                        <button className="text-button text-danger" onClick={() => archiveCustomer(row.id, row.title)}>Arsipkan</button>
+                      </>}
+                      {section === 'project-categories' && row.status === 'active' && <>
+                        <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-category') }}><Edit3 size={14} />Edit</button>
+                        <button className="text-button text-danger record-action-button" onClick={() => archiveProjectCategory(row.id, row.title)}>Arsipkan</button>
+                      </>}
+                      {section === 'invoices' && row.status !== 'cancelled' && (
+                        <div className="invoice-action-btns">
+                          {row.publicToken ? (
+                            <>
                               <button
                                 type="button"
-                                className="text-button project-action-button project-action-progress"
-                                onClick={() => {
-                                  setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode })
-                                  setDialog('progress')
-                                }}
+                                className="text-button record-action-button"
+                                onClick={() => void copyLink(publicInvoiceUrl(row.publicToken!))}
+                                title="Salin tautan invoice permanen"
                               >
-                                <Plus size={14} />Progres
+                                <Copy size={13} /> Salin Link
                               </button>
-                            </>}
-                            {section === 'projects' && row.status === 'completed' && <button type="button" className="text-button project-action-button" onClick={() => void downloadProjectReport(row)}><FileText size={14} />Laporan PDF</button>}
-                            {section === 'customers' && <>
-                              <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-customer') }}><Edit3 size={14} />Edit</button>
-                              <button className="text-button text-danger" onClick={() => archiveCustomer(row.id, row.title)}>Arsipkan</button>
-                            </>}
-                            {section === 'project-categories' && row.status === 'active' && <>
-                              <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-category') }}><Edit3 size={14} />Edit</button>
-                              <button className="text-button text-danger record-action-button" onClick={() => archiveProjectCategory(row.id, row.title)}>Arsipkan</button>
-                            </>}
-                            {section === 'invoices' && row.status !== 'cancelled' && (
-                              <div className="invoice-action-btns">
-                                {row.publicToken ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      className="text-button record-action-button"
-                                      onClick={() => void copyLink(publicInvoiceUrl(row.publicToken!))}
-                                      title="Salin tautan invoice permanen"
-                                    >
-                                      <Copy size={13} /> Salin Link
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="text-button button-wa-action"
-                                      onClick={() => sendInvoiceWhatsApp(row)}
-                                      title="Kirim tagihan ke WhatsApp pelanggan"
-                                    >
-                                      <MessageCircle size={13} /> Kirim WA
-                                    </button>
-                                  </>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    className="text-button"
-                                    disabled={issuingId === row.id}
-                                    onClick={() => void issueInvoice(row.id)}
-                                  >
-                                    {issuingId === row.id ? 'Memproses...' : 'Terbitkan link invoice'}
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                            {section === 'payments' && (
                               <button
                                 type="button"
                                 className="text-button button-wa-action"
-                                onClick={() => sendPaymentReceiptWhatsApp(row)}
-                                title="Kirim tanda terima ke WhatsApp pelanggan"
+                                onClick={() => sendInvoiceWhatsApp(row)}
+                                title="Kirim tagihan ke WhatsApp pelanggan"
                               >
-                                <MessageCircle size={13} /> Kirim Bukti WA
+                                <MessageCircle size={13} /> Kirim WA
                               </button>
-                            )}
-                            {section === 'transactions' && (row.editData?.invoiceId || row.editData?.paymentId)
-                              ? <span className="row-action-locked">Dikelola dari pembayaran</span>
-                              : section === 'transactions' && <>
-                                <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-transaction') }}><Edit3 size={14} />Edit</button>
-                                <button className="text-button text-danger record-action-button" onClick={() => deleteTransaction(row.id)}><Trash2 size={14} />Hapus</button>
-                              </>}
-                            {section === 'users' && row.role === 'workshop' && <button className="text-button" onClick={() => {
-                              setSelectedUser({ id: row.id, name: row.title, extra: row.detail })
-                              setDialog('reset-user')
-                            }}>Reset password</button>}
-                          </div>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              className="text-button"
+                              disabled={issuingId === row.id}
+                              onClick={() => void issueInvoice(row.id)}
+                            >
+                              {issuingId === row.id ? 'Memproses...' : 'Terbitkan link invoice'}
+                            </button>
+                          )}
                         </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      )}
+                      {section === 'payments' && (
+                        <button
+                          type="button"
+                          className="text-button button-wa-action"
+                          onClick={() => sendPaymentReceiptWhatsApp(row)}
+                          title="Kirim tanda terima ke WhatsApp pelanggan"
+                        >
+                          <MessageCircle size={13} /> Kirim Bukti WA
+                        </button>
+                      )}
+                      {section === 'transactions' && (row.editData?.invoiceId || row.editData?.paymentId)
+                        ? <span className="row-action-locked">Dikelola dari pembayaran</span>
+                        : section === 'transactions' && <>
+                          <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-transaction') }}><Edit3 size={14} />Edit</button>
+                          <button className="text-button text-danger record-action-button" onClick={() => deleteTransaction(row.id)}><Trash2 size={14} />Hapus</button>
+                        </>}
+                      {section === 'users' && row.role === 'workshop' && <button className="text-button" onClick={() => {
+                        setSelectedUser({ id: row.id, name: row.title, extra: row.detail })
+                        setDialog('reset-user')
+                      }}>Reset password</button>}
+                    </div>
+                  </footer>
+                </li>
+              )
+            })}
+          </ul>
         )}
         {!busy && filteredRows.length > pageSize && (
           <div className="table-pagination" aria-label="Navigasi halaman data">

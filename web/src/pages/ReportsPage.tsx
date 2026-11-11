@@ -140,7 +140,7 @@ export function ReportsPage({ client }: { client: SupabaseClient }) {
               <div className="table-scroll"><table><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Kategori</th><th>Jenis</th><th>Nominal</th></tr></thead><tbody>
                 {transactions.slice(0, 12).map((transaction) => <tr key={transaction.id}>
                   <td>{date(transaction.transaction_date)}</td><td className="strong-cell">{transaction.description}</td><td>{categoryName(transaction.transaction_categories) ?? '—'}</td>
-                  <td>{transaction.transaction_type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</td><td>{currency(transaction.amount)}</td>
+                  <td><span className={`status-badge status-${transaction.transaction_type}`}>{transaction.transaction_type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</span></td><td>{currency(transaction.amount)}</td>
                 </tr>)}
               </tbody></table></div>
             )}
