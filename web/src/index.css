@@ -196,8 +196,8 @@ tbody tr:hover { background: #fbfdfc; }
 .issued-link-panel svg { flex: 0 0 auto; }
 .page-footnote { display: flex; align-items: center; gap: 7px; margin-top: 13px; }
 
-.dialog-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; overflow-y: auto; place-items: center; padding: 20px; background: rgba(17, 35, 29, .45); backdrop-filter: blur(3px); }
-.dialog-card { width: min(620px, 100%); max-height: min(90vh, 850px); overflow-y: auto; padding: 22px; background: white; border-radius: 12px; box-shadow: 0 25px 80px rgba(20, 40, 35, .22); }
+.dialog-backdrop { position: fixed; z-index: 9999; inset: 0; display: grid; overflow-y: auto; place-items: center; padding: 20px; background: rgba(17, 35, 29, .55); backdrop-filter: blur(6px); }
+.dialog-card { width: min(680px, 100%); max-height: min(90vh, 850px); overflow-y: auto; overflow-x: hidden; padding: 22px; background: white; border-radius: 12px; box-shadow: 0 25px 80px rgba(20, 40, 35, .22); }
 .dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 17px; }
 .dialog-heading h2 { font-size: 17px; }
 .dialog-heading p { margin-top: 5px; font-size: 10px; }
@@ -2912,22 +2912,130 @@ body {
   }
 }
 
+/* Card View for Management Page (Desktop & Mobile) */
+.management-page .table-scroll {
+  overflow: visible;
+}
+
+.management-page table {
+  display: block;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.management-page thead {
+  display: none;
+}
+
+.management-page tbody {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.management-page tbody tr {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px;
+  background: #fffdf8;
+  border: 1px solid #e1d7c8;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(49, 39, 27, .05);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.management-page tbody tr:hover {
+  box-shadow: 0 12px 28px rgba(49, 39, 27, .1), inset 3px 0 0 var(--action);
+  transform: translateY(-2px);
+  background: #fffdf8 !important;
+}
+
+.management-page tbody td {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 0;
+  color: #4f4b43;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.management-page tbody td::before {
+  color: #8a8072;
+  content: attr(data-label);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+.management-page tbody td:first-child {
+  display: block;
+  padding-top: 2px;
+  padding-bottom: 12px;
+  margin-bottom: 6px;
+  border-bottom: 2px solid #e8dfd2;
+  font-size: 16px;
+  font-weight: 700;
+  color: #2b2319;
+}
+
+.management-page tbody td:first-child::before {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--action, #e05a1d);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.management-page tbody td:not(:last-child):not(:first-child) {
+  border-bottom: 1px solid #eee7dc;
+}
+
+.management-page tbody td.row-actions {
+  display: block;
+  min-width: 0;
+  margin-top: auto;
+  padding: 14px 0 0;
+  background: transparent;
+  border-top: 1px dashed #dcd2c4;
+  border-bottom: 0;
+  box-shadow: none;
+}
+
+.management-page tbody td.row-actions::before {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--action);
+  content: 'Aksi';
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.management-page .row-action-status {
+  min-height: 40px;
+  width: 100%;
+}
+
+.management-page .row-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.management-page .project-action-button {
+  min-height: 38px;
+}
+
 @media (max-width: 760px) {
-  .management-page .table-scroll {
-    overflow: visible;
-  }
-
-  .management-page table {
-    display: block;
-    border-spacing: 0;
-  }
-
-  .management-page thead {
-    display: none;
-  }
-
   .management-page tbody {
-    display: grid;
+    grid-template-columns: 1fr;
     gap: 12px;
     padding: 12px;
   }
@@ -2936,82 +3044,12 @@ body {
     padding: 11px 12px;
   }
 
-  .management-page tbody tr {
-    display: block;
-    padding: 13px 15px;
-    background: #fffdf8;
-    border: 1px solid #e1d7c8;
-    border-radius: 12px;
-    box-shadow: 0 10px 24px rgba(49, 39, 27, .06);
-  }
-
-  .management-page tbody tr:hover {
-    box-shadow: 0 12px 28px rgba(49, 39, 27, .09);
-  }
-
   .management-page tbody td {
-    display: grid;
     grid-template-columns: minmax(100px, .7fr) minmax(0, 1.3fr);
-    align-items: start;
-    gap: 12px;
-    padding: 9px 0;
-    color: #4f4b43;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
-  .management-page tbody td::before {
-    color: #8a8072;
-    content: attr(data-label);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .01em;
-  }
-
-  .management-page tbody td:first-child {
-    display: block;
-    padding-top: 2px;
-  }
-
-  .management-page tbody td:first-child::before {
-    display: block;
-    margin-bottom: 4px;
-  }
-
-  .management-page tbody td:not(:last-child) {
-    border-bottom: 1px solid #eee7dc;
-  }
-
-  .management-page tbody td.row-actions {
-    display: block;
-    min-width: 0;
-    padding: 13px 0 0;
-    background: transparent;
-    border-bottom: 0;
-    box-shadow: none;
-  }
-
-  .management-page tbody td.row-actions::before {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--action);
-    content: 'Aksi';
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
-
-  .management-page .row-action-status {
-    min-height: 40px;
   }
 
   .management-page .row-action-buttons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .management-page .project-action-button {
-    min-height: 40px;
   }
 }
 
@@ -3191,6 +3229,7 @@ body {
   font-size: 13.5px;
   line-height: 1.5;
   color: var(--ink);
+  white-space: pre-line;
 }
 
 .toast-close {
@@ -4395,5 +4434,722 @@ textarea::placeholder {
 
   .page-content {
     animation: none !important;
+  }
+}
+
+
+/* (Dialog mobile styles consolidated in Mobile Bottom Sheet section) */
+
+
+/* ===================================================================
+   FEATURE: Multi Bank Accounts — Settings + Invoice
+   =================================================================== */
+
+/* ─── Settings: Bank account cards ─── */
+.bank-account-card {
+  padding: 16px;
+  background: #faf7f1;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.bank-account-card:hover {
+  border-color: #cbbba7;
+  box-shadow: 0 4px 12px rgba(49, 39, 27, .05);
+}
+
+.bank-account-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.bank-account-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.bank-primary-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--action);
+  background: rgba(224, 90, 29, .08);
+  border: 1px solid rgba(224, 90, 29, .15);
+  border-radius: 99px;
+  letter-spacing: .02em;
+}
+
+.bank-remove-button {
+  color: var(--muted) !important;
+  transition: color .15s ease, background .15s ease;
+}
+
+.bank-remove-button:hover {
+  color: #dc2626 !important;
+  background: rgba(220, 38, 38, .08) !important;
+}
+
+.bank-empty-state {
+  padding: 20px;
+  text-align: center;
+  background: #faf7f1;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+}
+
+.settings-bank-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.settings-bank-heading .button {
+  min-height: 36px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* ─── Public Invoice: Multi bank accounts grid ─── */
+.bank-accounts-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.bank-account-item {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.bank-account-item p {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 14px;
+  margin: 0;
+  color: #625e55;
+  font-size: 13px;
+}
+
+.bank-account-item strong {
+  color: var(--ink);
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+/* Multiple columns on wider screens */
+@media (min-width: 540px) {
+  .bank-accounts-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
+
+@media print {
+  .bank-account-item {
+    border: 1px solid #ddd;
+    break-inside: avoid;
+  }
+}
+
+/* ─── Mobile: settings bank heading ─── */
+@media (max-width: 760px) {
+  .settings-bank-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-bank-heading .button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .bank-account-card .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ===================================================================
+   Dialog open state: Dialog.tsx adds .dialog-open to <body> while any
+   dialog is mounted, so floating chrome cannot cover the dialog buttons.
+   =================================================================== */
+
+body.dialog-open .mobile-bottom-nav,
+body.dialog-open .scroll-to-top {
+  display: none !important;
+}
+
+/* ===================================================================
+   MOBILE BOTTOM SHEET & DIALOG RESPONSIVENESS (< 760px)
+   =================================================================== */
+
+.dialog-drag-handle {
+  display: none;
+}
+
+.dialog-close-btn {
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--muted);
+  border: 1px solid transparent;
+  background: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dialog-close-btn:hover {
+  background: #eee7dc;
+  color: var(--ink);
+}
+
+@media (max-width: 760px) {
+  /* Mobile Bottom Sheet Overlay */
+  .dialog-backdrop {
+    z-index: 9999 !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    background: rgba(18, 19, 17, 0.6) !important;
+    backdrop-filter: blur(8px) saturate(1.2) !important;
+    -webkit-backdrop-filter: blur(8px) saturate(1.2) !important;
+  }
+
+  /* Sheet Card sliding up from bottom */
+  .dialog-card {
+    width: 100% !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    border-radius: 22px 22px 0 0 !important;
+    /* vh first as the fallback; dvh accounts for the mobile browser toolbar. */
+    max-height: calc(100vh - 44px) !important;
+    max-height: calc(100dvh - 44px) !important;
+    padding: 12px 16px calc(24px + env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25) !important;
+    animation: ckm-sheet-up 0.28s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  }
+
+  /* Visual drag handle bar */
+  .dialog-drag-handle {
+    display: block !important;
+    width: 44px;
+    height: 5px;
+    background: #d8cfc2;
+    border-radius: 99px;
+    margin: 0 auto 12px auto;
+    flex-shrink: 0;
+  }
+
+  /* Sticky header: Title and Close [X] remain fixed at the top while form scrolls */
+  .dialog-heading {
+    position: sticky !important;
+    top: -12px !important;
+    background: var(--surface, #fffdf8) !important;
+    z-index: 20 !important;
+    padding: 6px 0 12px 0 !important;
+    margin-bottom: 14px !important;
+    border-bottom: 1px solid #eee7dc !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+  }
+
+  .dialog-heading h2 {
+    font-size: 18px !important;
+    line-height: 1.3 !important;
+    color: var(--heading, #1f1d19) !important;
+    margin: 0 !important;
+  }
+
+  .dialog-heading p {
+    font-size: 12px !important;
+    margin-top: 3px !important;
+    color: var(--muted, #7a7062) !important;
+  }
+
+  /* Close button: 44x44px touch target, prominent & easy to tap */
+  .dialog-close-btn {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    display: inline-grid !important;
+    place-items: center !important;
+    border-radius: 50% !important;
+    background: #f4eee3 !important;
+    color: #4a4237 !important;
+    border: 1px solid #e2d7c7 !important;
+    flex-shrink: 0 !important;
+    cursor: pointer !important;
+    margin-top: -2px !important;
+    margin-right: -2px !important;
+    transition: background 0.15s ease, transform 0.15s ease !important;
+  }
+
+  .dialog-close-btn:active {
+    background: #e5dac9 !important;
+    transform: scale(0.94) !important;
+  }
+
+  /* Form inside dialog on mobile: single-column and anti-overflow */
+  .dialog-card .form-stack {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    gap: 14px !important;
+  }
+
+  .dialog-card .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .dialog-card input,
+  .dialog-card select,
+  .dialog-card textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    box-sizing: border-box !important;
+    font-size: 16px !important; /* iOS Safari zooms the page on focus below 16px */
+    text-overflow: ellipsis !important;
+  }
+
+  .dialog-card .field-group {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .dialog-card .form-footer {
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    gap: 10px !important;
+    margin-top: 18px !important;
+    width: 100% !important;
+  }
+
+  .dialog-card .form-footer .button {
+    width: 100% !important;
+    min-height: 46px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    justify-content: center !important;
+  }
+
+  .dialog-card .confirm-dialog-body {
+    padding: 12px 6px 6px !important;
+  }
+
+  .dialog-card .confirm-dialog-actions {
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin-top: 14px !important;
+  }
+
+  .dialog-card .confirm-dialog-actions .button {
+    width: 100% !important;
+    min-height: 46px !important;
+    font-size: 14px !important;
+    justify-content: center !important;
+  }
+
+  /* Invoice items editor on mobile */
+  .dialog-card .invoice-item-input {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 40px !important;
+    gap: 8px !important;
+    padding: 10px !important;
+    background: #faf7f0 !important;
+    border: 1px solid #e7decfa0 !important;
+    border-radius: 10px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .dialog-card .invoice-item-input input:first-child {
+    grid-column: 1 / -1 !important;
+  }
+
+  .dialog-card .invoice-item-input button {
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
+}
+
+@keyframes ckm-sheet-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+
+/* ===================================================================
+   FEATURE: Direct WhatsApp & Photo Preview Enhancement
+   =================================================================== */
+
+/* ─── WhatsApp Action Buttons ─── */
+.button-wa-action {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: #0e7250 !important;
+  background: #e6f7ef !important;
+  border: 1px solid #9de3c2 !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  padding: 6px 10px !important;
+  text-decoration: none !important;
+  cursor: pointer;
+  transition: all .2s ease !important;
+}
+
+.button-wa-action:hover {
+  background: #25d366 !important;
+  color: white !important;
+  border-color: #25d366 !important;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, .3) !important;
+  transform: translateY(-1px);
+}
+
+.button-wa-large {
+  padding: 10px 18px !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  border-radius: 10px !important;
+  gap: 8px;
+}
+
+.invoice-action-btns {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ─── Photo Preview in ProgressForm ─── */
+.photo-preview-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #faf7f1;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.photo-preview-img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .08);
+}
+
+.photo-preview-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.photo-preview-info strong {
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.photo-remove-btn {
+  padding: 5px 10px !important;
+  font-size: 11px !important;
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
+  background: #fff !important;
+  border-radius: 7px !important;
+}
+
+.photo-remove-btn:hover {
+  background: #fee2e2 !important;
+  border-color: #f87171 !important;
+  color: #b91c1c !important;
+}
+
+/* ─── Current Progress Banner in ProgressForm ─── */
+.current-progress-banner {
+  padding: 12px 15px;
+  background: #fbf9f5;
+  border: 1px solid #e5dcce;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.progress-banner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.progress-banner-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--action, #e05a1d);
+}
+
+.progress-banner-stage {
+  display: block;
+  font-size: 12px;
+  color: #685e50;
+  margin-top: 3px;
+}
+
+.progress-banner-percent {
+  font-size: 22px;
+  font-weight: 800;
+  color: #2b2319;
+}
+
+/* ─── Payment Receipt Confirmation View ─── */
+.payment-receipt-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 12px 6px;
+}
+
+.payment-receipt-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #e6f7ef;
+  color: #128c7e;
+  border: 2px solid #a3e6c5;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 14px rgba(18, 140, 126, .15);
+}
+
+.payment-receipt-view h3 {
+  margin: 4px 0 0;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.payment-receipt-view > p.muted {
+  margin: -4px 0 8px;
+  font-size: 13px;
+}
+
+.payment-receipt-card {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 16px;
+  background: #faf7f1;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.payment-receipt-card p {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  color: #625e55;
+}
+
+.payment-receipt-card strong {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.payment-receipt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+
+/* ===================================================================
+   Shared helpers used by the management forms, settings and invoice
+   =================================================================== */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Inline guidance inside a form (neutral, not an error). */
+.form-hint {
+  margin: 0;
+  padding: 9px 12px;
+  color: #6b5a48;
+  background: rgba(224, 90, 29, .06);
+  border: 1px solid rgba(224, 90, 29, .14);
+  border-left: 3px solid var(--action);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.form-success {
+  margin: 0;
+  padding: 10px 13px;
+  color: #065f46;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.current-progress-banner .progress-track {
+  margin-top: 8px;
+}
+
+.payment-receipt-amount {
+  color: var(--action) !important;
+}
+
+/* Clear-search button inside the empty state */
+.empty-state .text-button {
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+/* Project status select while a change is being saved */
+.row-action-status:disabled {
+  cursor: progress;
+  opacity: .6;
+}
+
+/* Bank account cards are <fieldset>s: reset the UA fieldset box. */
+fieldset.bank-account-card {
+  min-width: 0;
+  margin: 0 0 10px;
+}
+
+.settings-bank-heading .button {
+  gap: 6px;
+}
+
+/* Public invoice: bank details */
+.bank-accounts-intro {
+  margin: -2px 0 2px !important;
+  color: var(--muted) !important;
+  font-size: 12px;
+}
+
+.bank-account-number {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+}
+
+.bank-copy-button {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  color: var(--action);
+  background: #fff;
+  border: 1px solid #e5cdbd;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+
+.bank-copy-button:hover {
+  background: #fff4ec;
+  border-color: var(--action);
+}
+
+.bank-copy-button:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+
+@media print {
+  .bank-copy-button {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog-card {
+    animation: none !important;
+  }
+
+  .management-page tbody tr,
+  .management-page tbody tr:hover,
+  .button-wa-action:hover {
+    transform: none;
+    transition: none;
   }
 }

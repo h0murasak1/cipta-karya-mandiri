@@ -55,16 +55,28 @@ Deno.serve(async (request) => {
     })
     const { data: invoice, error: invoiceError } = await admin
       .from('invoices')
-      .select('id, status')
+      .select('id, status, public_token, public_token_hash, token_revoked_at')
       .eq('id', invoiceId)
       .maybeSingle()
     if (invoiceError) throw invoiceError
     if (!invoice || invoice.status === 'cancelled') return json({ error: 'Invoice not available' }, 404)
 
+    // PERMANENT LINK: If invoice already has an active permanent token, return the existing link
+    if (invoice.public_token && !invoice.token_revoked_at) {
+      const publicUrl = new URL(`/invoice/${invoice.public_token}`, appUrl)
+      return json({ url: publicUrl.toString(), token: invoice.public_token, is_existing: true, replaced_previous: false })
+    }
+
+    // Invoices issued before permanent links only stored the hash, so their old link
+    // cannot be recovered and stops working once a new token is written.
+    const replacedPrevious = Boolean(invoice.public_token_hash && !invoice.token_revoked_at)
+
+    // Otherwise, generate a new permanent token for the first time
     const bytes = crypto.getRandomValues(new Uint8Array(32))
     const token = [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('')
     const tokenHash = await hashToken(token)
     const { error: updateError } = await admin.from('invoices').update({
+      public_token: token,
       public_token_hash: tokenHash,
       token_created_at: new Date().toISOString(),
       token_revoked_at: null,
@@ -74,7 +86,7 @@ Deno.serve(async (request) => {
     if (updateError) throw updateError
 
     const publicUrl = new URL(`/invoice/${token}`, appUrl)
-    return json({ url: publicUrl.toString() })
+    return json({ url: publicUrl.toString(), token, is_existing: false, replaced_previous: replacedPrevious })
   } catch (error) {
     console.error('issue-invoice failed:', error)
     return json({ error: 'Invoice token could not be issued. Check Edge Function configuration and logs.' }, 500)

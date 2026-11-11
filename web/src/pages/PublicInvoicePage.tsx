@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { AlertCircle, FileDown, LoaderCircle } from 'lucide-react'
+import { AlertCircle, Check, Copy, FileDown, LoaderCircle } from 'lucide-react'
 import { currency, date, statusLabel } from '../lib/format'
+
+interface BankAccount {
+  bank_name: string
+  account_name: string
+  account_number: string
+}
 
 interface PublicInvoice {
   invoice_number: string
@@ -26,6 +32,7 @@ interface PublicInvoice {
     bank_name: string | null
     bank_account_name: string | null
     bank_account_number: string | null
+    bank_accounts?: BankAccount[]
     invoice_footer: string | null
   }
 }
@@ -34,6 +41,17 @@ export function PublicInvoicePage({ client, token }: { client: SupabaseClient; t
   const [invoice, setInvoice] = useState<PublicInvoice | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [copiedAccount, setCopiedAccount] = useState<string | null>(null)
+
+  const copyAccountNumber = async (accountNumber: string) => {
+    try {
+      await navigator.clipboard.writeText(accountNumber.replace(/[\s.-]/g, ''))
+      setCopiedAccount(accountNumber)
+      window.setTimeout(() => setCopiedAccount((current) => current === accountNumber ? null : current), 2000)
+    } catch {
+      // Clipboard access denied: the number stays visible and selectable.
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -59,6 +77,13 @@ export function PublicInvoicePage({ client, token }: { client: SupabaseClient; t
 
   const paid = invoice.payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
   const outstanding = Math.max(0, Number(invoice.total_amount) - paid)
+
+  // Build bank accounts list: prefer new array, fall back to legacy single fields
+  const bankAccounts: BankAccount[] = Array.isArray(invoice.company.bank_accounts) && invoice.company.bank_accounts.length > 0
+    ? invoice.company.bank_accounts.filter((a) => a.account_number)
+    : invoice.company.bank_account_number
+      ? [{ bank_name: invoice.company.bank_name ?? '', account_name: invoice.company.bank_account_name ?? '', account_number: invoice.company.bank_account_number }]
+      : []
 
   return (
     <main className="public-invoice-page">
@@ -94,11 +119,26 @@ export function PublicInvoicePage({ client, token }: { client: SupabaseClient; t
           <span className="invoice-outstanding">Sisa tagihan <strong>{currency(outstanding)}</strong></span>
         </div>
         {invoice.public_note && <div className="public-invoice-note"><strong>Catatan</strong><p>{invoice.public_note}</p></div>}
-        {invoice.company.bank_account_number && <section className="public-bank-details">
+        {bankAccounts.length > 0 && <section className="public-bank-details">
           <h2>Informasi pembayaran</h2>
-          {invoice.company.bank_name && <p><span>Bank</span><strong>{invoice.company.bank_name}</strong></p>}
-          <p><span>Nomor rekening</span><strong>{invoice.company.bank_account_number}</strong></p>
-          {invoice.company.bank_account_name && <p><span>Atas nama</span><strong>{invoice.company.bank_account_name}</strong></p>}
+          {outstanding > 0 && <p className="bank-accounts-intro">{bankAccounts.length > 1 ? 'Silakan transfer ke salah satu rekening berikut:' : 'Silakan transfer ke rekening berikut:'}</p>}
+          <div className="bank-accounts-grid">
+            {bankAccounts.map((account, index) => (
+              <div className="bank-account-item" key={`${account.account_number}-${index}`}>
+                {account.bank_name && <p><span>Bank</span><strong>{account.bank_name}</strong></p>}
+                <p>
+                  <span>Nomor rekening</span>
+                  <strong className="bank-account-number">
+                    {account.account_number}
+                    <button type="button" className="bank-copy-button" onClick={() => void copyAccountNumber(account.account_number)} aria-label={`Salin nomor rekening ${account.bank_name} ${account.account_number}`}>
+                      {copiedAccount === account.account_number ? <><Check size={13} /> Tersalin</> : <><Copy size={13} /> Salin</>}
+                    </button>
+                  </strong>
+                </p>
+                {account.account_name && <p><span>Atas nama</span><strong>{account.account_name}</strong></p>}
+              </div>
+            ))}
+          </div>
         </section>}
         {invoice.payments.length > 0 && <section className="public-payment-history"><h2>Riwayat pembayaran</h2>{invoice.payments.map((payment, index) => <div key={`${payment.paid_at}-${index}`}><span>{date(payment.paid_at)} · {payment.payment_method}</span><strong>{currency(payment.amount)}</strong></div>)}</section>}
         <footer className="public-invoice-footer">{invoice.company.invoice_footer || 'Terima kasih atas kepercayaan Anda.'}</footer>

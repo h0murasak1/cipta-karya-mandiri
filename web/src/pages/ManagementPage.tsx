@@ -1,6 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { Check, ChevronLeft, ChevronRight, Edit3, QrCode, Search, Trash2, UserRoundPlus, LoaderCircle, Plus, ImagePlus, UsersRound } from 'lucide-react'
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Edit3,
+  FileText,
+  ImagePlus,
+  LoaderCircle,
+  MessageCircle,
+  Plus,
+  QrCode,
+  Search,
+  Trash2,
+  UserRoundPlus,
+  UsersRound,
+} from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Dialog } from '../components/Dialog'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -8,6 +24,7 @@ import { useToast } from '../components/Toast'
 import { currency, date, statusLabel } from '../lib/format'
 import { compressImage } from '../lib/compressImage'
 import { openProjectReport, type ProjectReportData } from '../lib/projectReport'
+import { DEFAULT_COMPANY_SIGNATURE, companySignature, invoiceMessage, openWhatsApp, paymentReceiptMessage, publicInvoiceUrl, whatsAppNumber } from '../lib/whatsapp'
 import type { AppRole, Section } from '../lib/types'
 
 interface Row {
@@ -21,6 +38,10 @@ interface Row {
   createdAt?: string
   projectCode?: string
   assignmentIds?: string[]
+  publicToken?: string | null
+  customerPhone?: string | null
+  customerName?: string | null
+  outstandingAmount?: number
   editData?: {
     phone?: string | null
     email?: string | null
@@ -69,6 +90,13 @@ function localDateTimeIso(value: string) {
   return new Date(`${value}T00:00:00`).toISOString()
 }
 
+const INVALID_WHATSAPP_MESSAGE = 'Nomor WhatsApp pelanggan belum diisi atau tidak valid. Perbarui di data pelanggan.'
+
+const PROJECT_STATUSES = ['waiting_confirmation', 'waiting_work', 'in_progress', 'completed', 'cancelled'] as const
+
+/** Sections whose first cell shows `row.detail` as a secondary line (it is not already a column there). */
+const SUBLINE_SECTIONS: ReadonlySet<ManagementProps['section']> = new Set(['transactions', 'users'])
+
 const configs: Record<ManagementProps['section'], { title: string; subtitle: string; add?: string; columns: string[] }> = {
   projects: { title: 'Proyek workshop', subtitle: 'Pantau pekerjaan, jadwal, dan pembaruan progres.', add: 'Proyek baru', columns: ['Nama proyek', 'Kode', 'Pelanggan / kategori', 'Target selesai', 'Nilai kontrak', 'Staf workshop', 'Status'] },
   customers: { title: 'Pelanggan', subtitle: 'Kelola data dan kontak pelanggan workshop.', add: 'Pelanggan baru', columns: ['Nama pelanggan', 'Telepon', 'Email', 'Kode', 'Status'] },
@@ -102,6 +130,18 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
   const [issuedLink, setIssuedLink] = useState<string | null>(null)
   const [issuingId, setIssuingId] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void; danger?: boolean } | null>(null)
+  const [signature, setSignature] = useState(DEFAULT_COMPANY_SIGNATURE)
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null)
+  const canManage = role !== 'workshop'
+
+  useEffect(() => {
+    if (section !== 'invoices' && section !== 'payments') return
+    let active = true
+    void client.from('company_settings').select('company_name, legal_entity').eq('id', true).maybeSingle().then(({ data }) => {
+      if (active && data) setSignature(companySignature(data))
+    })
+    return () => { active = false }
+  }, [client, section])
 
   const refresh = useCallback(async () => {
     setBusy(true)
@@ -112,6 +152,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
     let nextCategories: Option[] = []
     let nextWorkshopUsers: Option[] = []
     let nextInvoices: Option[] = []
+    let customerPhoneMap = new Map<string, string>()
 
     if (section === 'customers' || section === 'projects' || section === 'invoices' || section === 'payments') {
       const result = await client.from('customers').select('id, name, phone, email, address, customer_code, is_active').eq('is_active', true).order('name')
@@ -120,6 +161,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
         setBusy(false)
         return
       }
+      customerPhoneMap = new Map((result.data ?? []).map((item) => [item.id, item.phone ?? '']))
       nextCustomers = (result.data ?? []).map((item) => ({ id: item.id, name: item.name, extra: item.customer_code ?? '' }))
     }
 
@@ -144,7 +186,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
         id: item.id,
         title: item.name,
         detail: item.description ?? 'Tanpa deskripsi',
-        cells: [item.description ?? '—', item.is_active ? 'Aktif' : 'Diarsipkan'],
+        cells: [item.name, item.description ?? '—', item.is_active ? 'Aktif' : 'Diarsipkan'],
         status: item.is_active ? 'active' : 'inactive',
         editData: { description: item.description },
       }))
@@ -219,6 +261,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
             detail: '',
             projectCode: item.project_code,
             cells: [
+              item.title,
               item.project_code,
               `${customer?.name ?? '—'} / ${category?.name ?? '—'}`,
               date(item.target_completion_date),
@@ -239,7 +282,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
         id: item.id,
         title: item.name,
         detail: item.phone ?? 'Tanpa nomor telepon',
-        cells: [item.phone ?? '—', item.email ?? '—', item.customer_code ?? '—', 'Aktif'],
+        cells: [item.name, item.phone ?? '—', item.email ?? '—', item.customer_code ?? '—', 'Aktif'],
         editData: { phone: item.phone, email: item.email, address: item.address, notes: item.notes },
       }))
     } else if (section === 'invoices') {
@@ -258,22 +301,36 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
 
       const [balanceResult, invoiceDetails] = await Promise.all([
         client.from('invoice_balances').select('id, invoice_number, customer_id, project_id, issue_date, due_date, status, total_amount, paid_amount, outstanding_amount, display_status').order('issue_date', { ascending: false }),
-        client.from('invoices').select('id, public_token_hash, token_revoked_at'),
+        client.from('invoices').select('id, public_token, public_token_hash, token_revoked_at'),
       ])
       if (balanceResult.error || invoiceDetails.error) {
         setError(`Invoice gagal dimuat: ${balanceResult.error?.message ?? invoiceDetails.error?.message}`)
       } else {
         const customerNames = new Map(nextCustomers.map((item) => [item.id, item.name]))
-        const tokens = new Map((invoiceDetails.data ?? []).map((item) => [item.id, Boolean(item.public_token_hash && !item.token_revoked_at)]))
-        nextRows = (balanceResult.data ?? []).map((item) => ({
-          id: item.id,
-          title: item.invoice_number,
-          detail: customerNames.get(item.customer_id) ?? '—',
-          cells: [customerNames.get(item.customer_id) ?? '—', `${date(item.issue_date)} / ${date(item.due_date)}`, currency(item.total_amount), currency(item.outstanding_amount), statusLabel(item.display_status)],
-          status: item.display_status,
-          amount: Number(item.total_amount),
-          createdAt: tokens.get(item.id) ? 'token-active' : 'token-missing',
-        }))
+        const tokens = new Map((invoiceDetails.data ?? []).map((item) => [item.id, !item.token_revoked_at && item.public_token ? item.public_token : null]))
+        nextRows = (balanceResult.data ?? []).map((item) => {
+          const token = tokens.get(item.id) ?? null
+          return {
+            id: item.id,
+            title: item.invoice_number,
+            detail: customerNames.get(item.customer_id) ?? '—',
+            cells: [
+              item.invoice_number,
+              customerNames.get(item.customer_id) ?? '—',
+              `${date(item.issue_date)} / ${date(item.due_date)}`,
+              currency(item.total_amount),
+              currency(item.outstanding_amount),
+              statusLabel(item.display_status),
+            ],
+            status: item.display_status,
+            amount: Number(item.total_amount),
+            outstandingAmount: Number(item.outstanding_amount),
+            publicToken: token,
+            customerPhone: customerPhoneMap.get(item.customer_id) ?? null,
+            customerName: customerNames.get(item.customer_id) ?? null,
+            createdAt: token ? 'token-active' : 'token-missing',
+          }
+        })
         nextInvoices = (balanceResult.data ?? []).filter((item) => Number(item.outstanding_amount) > 0 && !['draft', 'cancelled'].includes(item.display_status)).map((item) => ({
           id: item.id,
           name: item.invoice_number,
@@ -283,7 +340,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
     } else if (section === 'payments') {
       const [result, balanceResult] = await Promise.all([
         client.from('payments')
-          .select('id, invoice_id, amount, paid_at, payment_method, reference_number, invoices(invoice_number)')
+          .select('id, invoice_id, amount, paid_at, payment_method, reference_number, invoices(invoice_number, public_token, token_revoked_at, customer_id)')
           .order('paid_at', { ascending: false })
           .limit(200),
         client.from('invoice_balances')
@@ -296,14 +353,27 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
       if (result.error || balanceResult.error) {
         setError(`Pembayaran gagal dimuat: ${result.error?.message ?? balanceResult.error?.message}`)
       } else {
-        nextRows = (result.data ?? []).map((item) => ({
-          id: item.id,
-          title: (Array.isArray(item.invoices) ? item.invoices[0] : item.invoices)?.invoice_number ?? 'Invoice',
-          detail: date(item.paid_at),
-          cells: [date(item.paid_at), item.payment_method, item.reference_number ?? '—', currency(item.amount)],
-          amount: Number(item.amount),
-        }))
         const customerNames = new Map(nextCustomers.map((item) => [item.id, item.name]))
+        nextRows = (result.data ?? []).map((item) => {
+          const inv = Array.isArray(item.invoices) ? item.invoices[0] : item.invoices
+          const customerId = inv?.customer_id
+          return {
+            id: item.id,
+            title: inv?.invoice_number ?? 'Invoice',
+            detail: date(item.paid_at),
+            cells: [
+              inv?.invoice_number ?? 'Invoice',
+              date(item.paid_at),
+              item.payment_method,
+              item.reference_number ?? '—',
+              currency(item.amount),
+            ],
+            amount: Number(item.amount),
+            publicToken: inv && !inv.token_revoked_at ? inv.public_token ?? null : null,
+            customerPhone: customerId ? customerPhoneMap.get(customerId) ?? null : null,
+            customerName: customerId ? customerNames.get(customerId) ?? null : null,
+          }
+        })
         nextInvoices = (balanceResult.data ?? []).map((item) => ({
           id: item.id,
           name: item.invoice_number,
@@ -320,7 +390,13 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
         id: item.id,
         title: item.description,
         detail: item.invoice_id ? 'Dari pembayaran invoice' : 'Transaksi manual',
-        cells: [date(item.transaction_date), (Array.isArray(item.transaction_categories) ? item.transaction_categories[0] : item.transaction_categories)?.name ?? '—', item.transaction_type === 'income' ? 'Pemasukan' : 'Pengeluaran', currency(item.amount)],
+        cells: [
+          item.description,
+          date(item.transaction_date),
+          (Array.isArray(item.transaction_categories) ? item.transaction_categories[0] : item.transaction_categories)?.name ?? '—',
+          item.transaction_type === 'income' ? 'Pemasukan' : 'Pengeluaran',
+          currency(item.amount),
+        ],
         status: item.transaction_type,
         amount: Number(item.amount),
         editData: {
@@ -341,7 +417,12 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
         id: item.id,
         title: item.full_name || 'Tanpa nama',
         detail: item.email ?? 'Email belum tersedia',
-        cells: [item.phone ?? '—', item.role === 'owner' ? 'Owner/Admin' : item.role === 'admin' ? 'Admin' : 'Workshop', item.is_active ? 'Aktif' : 'Nonaktif'],
+        cells: [
+          item.full_name || 'Tanpa nama',
+          item.phone ?? '—',
+          item.role === 'owner' ? 'Owner/Admin' : item.role === 'admin' ? 'Admin' : 'Workshop',
+          item.is_active ? 'Aktif' : 'Nonaktif',
+        ],
         role: item.role as AppRole,
       }))
     }
@@ -404,18 +485,47 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
     }
     setIssuedLink(data.url)
     setIssuingId(null)
-    toast('success', 'Link publik aktif. Jika diterbitkan ulang, token QR sebelumnya tidak berlaku lagi.')
+    toast('success', data.replaced_previous
+      ? 'Link invoice permanen diterbitkan. Link/QR lama invoice ini tidak berlaku lagi — kirim ulang link baru ke pelanggan.'
+      : data.is_existing ? 'Link invoice sudah aktif dan permanen.' : 'Link invoice permanen berhasil diterbitkan.')
     await refresh()
   }
 
-  const copyIssuedLink = async () => {
-    if (!issuedLink) return
+  const copyLink = async (url: string) => {
     try {
-      await navigator.clipboard.writeText(issuedLink)
+      await navigator.clipboard.writeText(url)
       toast('success', 'Link invoice berhasil disalin.')
     } catch (copyError) {
       toast('error', `Link invoice gagal disalin: ${copyError instanceof Error ? copyError.message : 'akses clipboard ditolak.'}`)
     }
+  }
+
+  const sendInvoiceWhatsApp = (row: Row) => {
+    if (!row.publicToken) {
+      toast('error', 'Invoice belum memiliki link. Terbitkan link terlebih dahulu.')
+      return
+    }
+    const sent = openWhatsApp(row.customerPhone, invoiceMessage({
+      customerName: row.customerName,
+      invoiceNumber: row.title,
+      totalAmount: row.amount ?? 0,
+      outstandingAmount: row.outstandingAmount ?? row.amount ?? 0,
+      url: publicInvoiceUrl(row.publicToken),
+      signature,
+    }))
+    if (!sent) toast('error', INVALID_WHATSAPP_MESSAGE)
+  }
+
+  const sendPaymentReceiptWhatsApp = (row: Row) => {
+    const sent = openWhatsApp(row.customerPhone, paymentReceiptMessage({
+      customerName: row.customerName,
+      invoiceNumber: row.title,
+      amount: row.amount ?? 0,
+      paidOn: row.detail,
+      url: row.publicToken ? publicInvoiceUrl(row.publicToken) : null,
+      signature,
+    }))
+    if (!sent) toast('error', INVALID_WHATSAPP_MESSAGE)
   }
 
   const archiveCustomer = (id: string, name: string) => {
@@ -467,25 +577,75 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
   }
 
   const updateProjectStatus = async (id: string, status: string) => {
-    const { error: updateError } = await client.from('projects').update({ status }).eq('id', id)
-    if (updateError) toast('error', `Status proyek gagal diperbarui: ${updateError.message}`)
-    else {
-      toast('success', 'Status proyek diperbarui.')
+    // The status <select> is controlled by row.status, so on any early return below it
+    // simply snaps back to the saved value — no reload needed.
+    setStatusUpdatingId(id)
+    try {
+      if (status === 'completed') {
+        const blockers = await completionBlockers(id)
+        if (typeof blockers === 'string') {
+          toast('error', blockers)
+          return
+        }
+        if (blockers.length > 0) {
+          toast('error', `Proyek belum dapat diselesaikan:\n• ${blockers.join('\n• ')}`)
+          return
+        }
+      }
+
+      // The database trigger enforces the same completion rules; this is the source of truth.
+      const { error: updateError } = await client.from('projects').update({ status }).eq('id', id)
+      if (updateError) {
+        toast('error', `Status proyek gagal diperbarui: ${updateError.message}`)
+        return
+      }
+      toast('success', status === 'completed' ? 'Proyek berhasil diselesaikan. Laporan PDF kini tersedia.' : 'Status proyek diperbarui.')
       await refresh()
+    } finally {
+      setStatusUpdatingId(null)
     }
   }
 
+  /** Friendly pre-check of the completion rules. Returns the unmet rules, or a string when the check itself failed. */
+  const completionBlockers = async (projectId: string): Promise<string[] | string> => {
+    const [progressResult, invoiceResult, projectResult] = await Promise.all([
+      // Progress only ever increases, so the highest entry is the current one.
+      client.from('project_progress').select('progress_percent').eq('project_id', projectId).order('progress_percent', { ascending: false }).limit(1),
+      client.from('invoice_balances').select('invoice_number, outstanding_amount, display_status').eq('project_id', projectId).neq('display_status', 'cancelled'),
+      client.from('projects').select('contract_value').eq('id', projectId).single(),
+    ])
+    const checkError = progressResult.error ?? invoiceResult.error ?? projectResult.error
+    if (checkError) return `Syarat penyelesaian proyek gagal diperiksa: ${checkError.message}`
+
+    const blockers: string[] = []
+    const currentPercent = Number(progressResult.data?.[0]?.progress_percent ?? 0)
+    if (currentPercent < 100) blockers.push(`Progres pekerjaan baru ${currentPercent}%, belum mencapai 100%`)
+
+    const projectInvoices = invoiceResult.data ?? []
+    const contractValue = Number(projectResult.data?.contract_value || 0)
+    const unpaid = projectInvoices.filter((invoice) => Number(invoice.outstanding_amount) > 0)
+    if (projectInvoices.length === 0 && contractValue > 0) {
+      blockers.push(`Belum ada invoice untuk nilai kontrak ${currency(contractValue)}`)
+    } else if (unpaid.length > 0) {
+      blockers.push(`Invoice belum lunas: ${unpaid.map((invoice) => `${invoice.invoice_number} (sisa ${currency(Number(invoice.outstanding_amount))})`).join(', ')}`)
+    }
+    return blockers
+  }
+
   const downloadProjectReport = async (row: Row) => {
-      const reportWindow = window.open('', '_blank')
-      if (!reportWindow) {
-        toast('error', 'Popup laporan diblokir browser. Izinkan popup untuk mengunduh PDF.')
-        return
-      }
-      reportWindow.document.write('<p style="font:14px Arial;padding:24px">Menyiapkan laporan proyek...</p>')
-      const [projectResult, progressResult, photoResult] = await Promise.all([
+    const reportWindow = window.open('', '_blank')
+    if (!reportWindow) {
+      toast('error', 'Jendela baru diblokir oleh browser. Izinkan pop-up untuk melihat laporan.')
+      return
+    }
+    reportWindow.document.write('<p style="font:14px Arial;padding:24px;color:#555">Menyiapkan laporan proyek...</p>')
+    try {
+      const [projectResult, progressResult, photoResult, companyResult] = await Promise.all([
         client.from('projects').select('project_code, title, description, location, status, start_date, target_completion_date, contract_value, customers(name, address), project_categories(name)').eq('id', row.id).single(),
-        client.from('project_progress').select('id, progress_date, stage_name, progress_percent, description').eq('project_id', row.id).order('progress_date'),
+        client.from('project_progress').select('id, progress_date, stage_name, progress_percent, description').eq('project_id', row.id).order('progress_date').order('created_at'),
         client.from('project_photos').select('progress_id, storage_path, caption').eq('project_id', row.id).order('created_at'),
+        // Letterhead only: the report still renders with a fallback when this is not readable.
+        client.from('company_settings').select('company_name, legal_entity, address, phone, email').eq('id', true).maybeSingle(),
       ])
       if (projectResult.error || progressResult.error || photoResult.error || !projectResult.data) {
         reportWindow.close()
@@ -494,12 +654,26 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
       }
       const photoRows = photoResult.data ?? []
       const signed = await Promise.all(photoRows.map(async (photo) => {
-        const result = await client.storage.from('project-photos').createSignedUrl(photo.storage_path, 3600)
-        return { ...photo, url: result.data?.signedUrl ?? null }
+        try {
+          const result = await client.storage.from('project-photos').createSignedUrl(photo.storage_path, 3600)
+          return { ...photo, url: result.data?.signedUrl ?? null }
+        } catch {
+          return { ...photo, url: null }
+        }
       }))
       const customer = Array.isArray(projectResult.data.customers) ? projectResult.data.customers[0] : projectResult.data.customers
       const category = Array.isArray(projectResult.data.project_categories) ? projectResult.data.project_categories[0] : projectResult.data.project_categories
+      const company = companyResult.data
       const report: ProjectReportData = {
+        company: company ? {
+          name: company.company_name,
+          legalEntity: company.legal_entity,
+          address: company.address,
+          phone: company.phone,
+          email: company.email,
+        } : null,
+        // Workshop staff are not shown contract values anywhere else in the app.
+        showContractValue: canManage,
         projectCode: projectResult.data.project_code,
         title: projectResult.data.title,
         description: projectResult.data.description,
@@ -507,7 +681,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
         status: projectResult.data.status,
         startDate: projectResult.data.start_date,
         targetDate: projectResult.data.target_completion_date,
-        contractValue: Number(projectResult.data.contract_value),
+        contractValue: Number(projectResult.data.contract_value || 0),
         customerName: customer?.name ?? '—',
         customerAddress: customer?.address ?? null,
         categoryName: category?.name ?? null,
@@ -516,10 +690,16 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
           stageName: progress.stage_name,
           progressPercent: Number(progress.progress_percent),
           description: progress.description,
-          photos: signed.filter((photo) => photo.progress_id === progress.id && photo.url).map((photo) => ({ url: photo.url as string, caption: photo.caption })),
+          photos: signed
+            .filter((photo) => photo.progress_id === progress.id && photo.url)
+            .map((photo) => ({ url: photo.url as string, caption: photo.caption })),
         })),
       }
       openProjectReport(report, reportWindow)
+    } catch (err) {
+      reportWindow.close()
+      toast('error', `Laporan gagal disiapkan: ${err instanceof Error ? err.message : 'terjadi kesalahan sistem.'}`)
+    }
   }
 
   const saveDone = async (message?: string) => {
@@ -538,8 +718,8 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
       {error && <div className="form-error" role="alert">{error}</div>}
       {issuedLink && (
         <div className="issued-link-panel">
-          <div><QrCode size={18} /><div><strong>Link invoice publik</strong><span>{issuedLink}</span></div></div>
-          <button className="button button-secondary button-small" onClick={() => void copyIssuedLink()}>Salin tautan</button>
+          <div><QrCode size={18} /><div><strong>Link invoice publik (permanen)</strong><span>{issuedLink}</span></div></div>
+          <button type="button" className="button button-secondary button-small" onClick={() => void copyLink(issuedLink)}><Copy size={14} /> Salin tautan</button>
           <QRCodeSVG value={issuedLink} size={88} />
         </div>
       )}
@@ -549,7 +729,15 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
           <label className="search-control"><Search size={16} /><input value={filter} onChange={(event) => { setFilter(event.target.value); setPage(1) }} placeholder="Cari data..." /></label>
         </div>
         {busy ? <div className="loading-inline"><LoaderCircle className="spin" size={18} /> Memuat data...</div> : visibleRows.length === 0 ? (
-          <div className="empty-state"><span className="empty-icon"><Plus size={19} /></span><p>{error ? 'Data tidak dapat ditampilkan sampai kendala di atas diperbaiki.' : 'Belum ada data untuk ditampilkan.'}</p></div>
+          <div className="empty-state">
+            <span className="empty-icon">{filter.trim() && !error ? <Search size={19} /> : <Plus size={19} />}</span>
+            <p>{error
+              ? 'Data tidak dapat ditampilkan sampai kendala di atas diperbaiki.'
+              : filter.trim()
+                ? `Tidak ada data yang cocok dengan “${filter.trim()}”.`
+                : 'Belum ada data untuk ditampilkan.'}</p>
+            {filter.trim() && !error && <button type="button" className="text-button" onClick={() => setFilter('')}>Hapus pencarian</button>}
+          </div>
         ) : (
           <div className="table-scroll">
             <table>
@@ -557,17 +745,56 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
               <tbody>
                 {visibleRows.map((row) => (
                   <tr key={row.id}>
-                      <td data-label={columns[0]}><span className="strong-cell">{row.title}</span>{row.detail && <small className="table-subline">{row.detail}</small>}</td>
-                    {row.cells.map((cell, index) => <td data-label={columns[index + 1]} key={`${row.id}-${index}`}>{index === row.cells.length - 1 && row.status ? <StatusBadge value={row.status} text={cell} /> : cell}</td>)}
+                    {row.cells.map((cell, index) => {
+                      const isStatusColumn = columns[index] === 'Status' || columns[index] === 'Jenis'
+                      return (
+                        <td data-label={columns[index]} key={columns[index] ?? index}>
+                          {index === 0 ? <>
+                            <span className="strong-cell">{cell}</span>
+                            {SUBLINE_SECTIONS.has(section) && row.detail && <small className="table-subline">{row.detail}</small>}
+                          </> : isStatusColumn && row.status ? <StatusBadge value={row.status} text={cell} /> : cell}
+                        </td>
+                      )
+                    })}
                     <td className="row-actions">
                         <div className="row-action-group">
-                            {section === 'projects' && role !== 'workshop' && <select className="row-action-status" aria-label={`Ubah status ${row.title}`} value={row.status} onChange={(event) => void updateProjectStatus(row.id, event.target.value)}>
-                              <option value="waiting_confirmation">Menunggu konfirmasi</option><option value="waiting_work">Menunggu pengerjaan</option><option value="in_progress">Dalam proses</option><option value="completed">Selesai</option><option value="cancelled">Dibatalkan</option>
-                          </select>}
+                          {section === 'projects' && canManage && (
+                            <select
+                              aria-label={`Ubah status proyek ${row.title}`}
+                              className="row-action-status"
+                              value={row.status}
+                              disabled={statusUpdatingId !== null}
+                              onChange={(event) => void updateProjectStatus(row.id, event.target.value)}
+                            >
+                              {PROJECT_STATUSES.map((value) => <option value={value} key={value}>{statusLabel(value)}</option>)}
+                            </select>
+                          )}
                           <div className="row-action-buttons">
-                            {section === 'projects' && role !== 'workshop' && <button className="text-button project-action-button project-action-assignment" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode, assignedIds: row.assignmentIds }); setDialog('assignment') }}><UserRoundPlus size={14} />Atur staf</button>}
-                            {section === 'projects' && <button className="text-button project-action-button project-action-progress" onClick={() => { setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode }); setDialog('progress') }}><ImagePlus size={14} />Tambah progres</button>}
-                            {section === 'projects' && row.status === 'completed' && <button className="text-button project-action-button" onClick={() => void downloadProjectReport(row)}>Laporan PDF</button>}
+                            {section === 'projects' && <>
+                              {canManage && (
+                                <button
+                                  type="button"
+                                  className="text-button project-action-button project-action-assignment"
+                                  onClick={() => {
+                                    setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode, assignedIds: row.assignmentIds })
+                                    setDialog('assignment')
+                                  }}
+                                >
+                                  <UsersRound size={14} />Staf
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="text-button project-action-button project-action-progress"
+                                onClick={() => {
+                                  setSelectedProject({ id: row.id, name: row.title, extra: row.projectCode })
+                                  setDialog('progress')
+                                }}
+                              >
+                                <Plus size={14} />Progres
+                              </button>
+                            </>}
+                            {section === 'projects' && row.status === 'completed' && <button type="button" className="text-button project-action-button" onClick={() => void downloadProjectReport(row)}><FileText size={14} />Laporan PDF</button>}
                             {section === 'customers' && <>
                               <button className="text-button record-action-button" onClick={() => { setSelectedRow(row); setDialog('edit-customer') }}><Edit3 size={14} />Edit</button>
                               <button className="text-button text-danger" onClick={() => archiveCustomer(row.id, row.title)}>Arsipkan</button>
@@ -577,8 +804,46 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
                               <button className="text-button text-danger record-action-button" onClick={() => archiveProjectCategory(row.id, row.title)}>Arsipkan</button>
                             </>}
                             {section === 'invoices' && row.status !== 'cancelled' && (
-                              <button className="text-button" disabled={issuingId === row.id} onClick={() => void issueInvoice(row.id)}>
-                                {issuingId === row.id ? 'Memproses...' : row.createdAt === 'token-active' ? 'Perbarui link invoice' : 'Generate link invoice'}
+                              <div className="invoice-action-btns">
+                                {row.publicToken ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="text-button record-action-button"
+                                      onClick={() => void copyLink(publicInvoiceUrl(row.publicToken!))}
+                                      title="Salin tautan invoice permanen"
+                                    >
+                                      <Copy size={13} /> Salin Link
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="text-button button-wa-action"
+                                      onClick={() => sendInvoiceWhatsApp(row)}
+                                      title="Kirim tagihan ke WhatsApp pelanggan"
+                                    >
+                                      <MessageCircle size={13} /> Kirim WA
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="text-button"
+                                    disabled={issuingId === row.id}
+                                    onClick={() => void issueInvoice(row.id)}
+                                  >
+                                    {issuingId === row.id ? 'Memproses...' : 'Terbitkan link invoice'}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            {section === 'payments' && (
+                              <button
+                                type="button"
+                                className="text-button button-wa-action"
+                                onClick={() => sendPaymentReceiptWhatsApp(row)}
+                                title="Kirim tanda terima ke WhatsApp pelanggan"
+                              >
+                                <MessageCircle size={13} /> Kirim Bukti WA
                               </button>
                             )}
                             {section === 'transactions' && (row.editData?.invoiceId || row.editData?.paymentId)
@@ -620,7 +885,7 @@ export function ManagementPage({ client, role, section, userId }: ManagementProp
       {dialog === 'invoice' && <Dialog title="Buat invoice" description="Invoice baru disimpan sebagai draft." onClose={() => setDialog(null)}><InvoiceForm client={client} userId={userId} customers={customers} projects={projects} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'transaction' && <Dialog title="Transaksi manual" onClose={() => setDialog(null)}><TransactionForm client={client} userId={userId} projects={projects} categories={categories} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'edit-transaction' && selectedRow && <Dialog title="Edit transaksi manual" description={selectedRow.title} onClose={() => setDialog(null)}><TransactionForm client={client} userId={userId} projects={projects} categories={categories} initial={selectedRow} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
-      {dialog === 'payment' && <Dialog title="Catat pembayaran" description="Pembayaran dicatat oleh fungsi database secara atomik bersama transaksi kas masuk." onClose={() => setDialog(null)}><PaymentForm client={client} userId={userId} invoices={invoices} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
+      {dialog === 'payment' && <Dialog title="Catat pembayaran" description="Pembayaran dicatat oleh fungsi database secara atomik bersama transaksi kas masuk." onClose={() => setDialog(null)}><PaymentForm client={client} userId={userId} invoices={invoices} signature={signature} onRecorded={() => void refresh()} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'progress' && selectedProject && <Dialog title="Tambah progres proyek" description={`${selectedProject.name} · ${selectedProject.extra ?? ''}`} onClose={() => setDialog(null)}><ProgressForm client={client} userId={userId} project={selectedProject} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'assignment' && selectedProject && <Dialog title="Atur staf proyek" description={`${selectedProject.name} · ${selectedProject.extra ?? ''}`} onClose={() => setDialog(null)}><AssignmentForm client={client} userId={userId} project={selectedProject} users={workshopUsers} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
       {dialog === 'user' && <Dialog title="Tambah staf Workshop" description="Akun dibuat aktif dan dapat langsung digunakan untuk masuk." onClose={() => setDialog(null)}><WorkshopUserForm client={client} onCancel={() => setDialog(null)} onDone={saveDone} /></Dialog>}
@@ -988,7 +1253,8 @@ function TransactionForm({ client, userId, projects, categories, initial, onDone
   }
   return <form className="form-stack" onSubmit={(event) => void save(event)}>
     <div className="field-group"><span className="field-label">Jenis transaksi</span><div className="segmented-control"><button type="button" className={type === 'income' ? 'segment-active' : ''} onClick={() => setType('income')}>Pemasukan</button><button type="button" className={type === 'expense' ? 'segment-active' : ''} onClick={() => setType('expense')}>Pengeluaran</button></div></div>
-    <div className="form-grid"><SelectField label="Kategori" name="category_id" options={categories.filter((item) => item.extra === type)} required defaultValue={initial?.editData?.categoryId ?? ''} /><Field label="Nominal (Rp)" name="amount" type="number" min="1" required defaultValue={initial?.editData?.amount?.toString()} /></div>
+    {type === 'income' && <p className="form-hint">Untuk pemasukan dari pembayaran invoice, gunakan menu <strong>Pembayaran</strong> agar sisa tagihan invoice ikut diperbarui.</p>}
+    <div className="form-grid"><SelectField label="Kategori" name="category_id" options={categories.filter((item) => item.extra === type && (item.id === initial?.editData?.categoryId || !item.name.toLowerCase().includes('invoice')))} required defaultValue={initial?.editData?.categoryId ?? ''} /><Field label="Nominal (Rp)" name="amount" type="number" min="1" required defaultValue={initial?.editData?.amount?.toString()} /></div>
     <div className="form-grid"><Field label="Tanggal" name="transaction_date" type="date" defaultValue={initial?.editData?.transactionDate ?? today} required /><SelectField label="Proyek terkait" name="project_id" options={projects} optionalLabel="Tanpa proyek" defaultValue={initial?.editData?.projectId ?? ''} /></div>
     <SelectField label="Pelanggan terkait" name="customer_id" options={customerOptions} optionalLabel="Tanpa pelanggan" defaultValue={initial?.editData?.customerId ?? ''} />
     <Field label="Keterangan" name="description" required defaultValue={initial?.title} />
@@ -996,27 +1262,110 @@ function TransactionForm({ client, userId, projects, categories, initial, onDone
   </form>
 }
 
-function PaymentForm({ client, userId, invoices, onDone, onCancel }: FormProps & { invoices: Option[] }) {
+interface PaymentReceiptData {
+  invoiceNumber: string
+  amount: number
+  customerName: string
+  customerPhone: string
+  /** null when the balance could not be re-read after saving. */
+  remainingAmount: number | null
+  publicToken: string | null
+}
+
+function PaymentForm({ client, userId, invoices, signature, onRecorded, onDone, onCancel }: FormProps & { invoices: Option[]; signature: string; onRecorded: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [today] = useState(localDateInputValue)
+  const [receipt, setReceipt] = useState<PaymentReceiptData | null>(null)
+
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setBusy(true)
     setError(null)
     const form = new FormData(event.currentTarget)
+    const invoiceId = String(form.get('invoice_id'))
+    const paidAmount = Number(form.get('amount'))
+
     const { error: rpcError } = await client.rpc('record_invoice_payment', {
-      p_invoice_id: String(form.get('invoice_id')),
-      p_amount: Number(form.get('amount')),
+      p_invoice_id: invoiceId,
+      p_amount: paidAmount,
       p_paid_at: localDateTimeIso(String(form.get('paid_at'))),
       p_payment_method: String(form.get('payment_method')),
       p_reference_number: String(form.get('reference_number') || '') || null,
       p_notes: String(form.get('notes') || '') || null,
     })
-    if (rpcError) setError(`Pembayaran gagal dicatat: ${rpcError.message}`)
-    else onDone('Pembayaran dan transaksi kas masuk berhasil dicatat secara atomik.')
+    if (rpcError) {
+      setError(`Pembayaran gagal dicatat: ${rpcError.message}`)
+      setBusy(false)
+      return
+    }
+
+    // The payment is committed: refresh the list now, so it is up to date however this dialog gets closed.
+    onRecorded()
+
+    // Fetch invoice & balance to prepare receipt confirmation
+    const [invRes, balRes] = await Promise.all([
+      client.from('invoices').select('invoice_number, public_token, token_revoked_at, customers(name, phone)').eq('id', invoiceId).maybeSingle(),
+      client.from('invoice_balances').select('outstanding_amount').eq('id', invoiceId).maybeSingle(),
+    ])
+
+    const inv = invRes.data
+    const cust = inv?.customers ? (Array.isArray(inv.customers) ? inv.customers[0] : inv.customers) : null
+    if (inv) {
+      setReceipt({
+        invoiceNumber: inv.invoice_number,
+        amount: paidAmount,
+        customerName: cust?.name ?? '',
+        customerPhone: cust?.phone ?? '',
+        remainingAmount: balRes.data ? Number(balRes.data.outstanding_amount) : null,
+        publicToken: inv.token_revoked_at ? null : inv.public_token,
+      })
+    } else {
+      onDone('Pembayaran dan transaksi kas masuk berhasil dicatat.')
+    }
     setBusy(false)
   }
+
+  if (receipt) {
+    const canSendWhatsApp = whatsAppNumber(receipt.customerPhone) !== null
+    const sendWA = () => {
+      openWhatsApp(receipt.customerPhone, paymentReceiptMessage({
+        customerName: receipt.customerName,
+        invoiceNumber: receipt.invoiceNumber,
+        amount: receipt.amount,
+        outstandingAmount: receipt.remainingAmount ?? undefined,
+        url: receipt.publicToken ? publicInvoiceUrl(receipt.publicToken) : null,
+        signature,
+      }))
+    }
+
+    return (
+      <div className="payment-receipt-view">
+        <div className="payment-receipt-icon"><Check size={28} /></div>
+        <h3>Pembayaran berhasil dicatat</h3>
+        <p className="muted">Pembayaran telah masuk ke buku kas dan status invoice telah diperbarui.</p>
+        <div className="payment-receipt-card">
+          <p><span>Nomor invoice</span><strong>{receipt.invoiceNumber}</strong></p>
+          <p><span>Pelanggan</span><strong>{receipt.customerName || '—'}</strong></p>
+          <p><span>Nominal diterima</span><strong className="payment-receipt-amount">{currency(receipt.amount)}</strong></p>
+          {receipt.remainingAmount !== null && <p><span>Sisa tagihan</span><strong>{receipt.remainingAmount > 0 ? currency(receipt.remainingAmount) : 'LUNAS'}</strong></p>}
+        </div>
+        <div className="payment-receipt-actions">
+          {canSendWhatsApp ? (
+            <button type="button" className="button button-wa-action button-wa-large" onClick={sendWA}>
+              <MessageCircle size={16} /> Kirim bukti ke WhatsApp
+            </button>
+          ) : (
+            <p className="small muted">Nomor WhatsApp pelanggan belum diisi atau tidak valid, jadi bukti tidak dapat dikirim dari sini.</p>
+          )}
+          <button type="button" className="button button-secondary" onClick={onCancel}>
+            Selesai
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return <form className="form-stack" onSubmit={(event) => void save(event)}>
     <SelectField label="Invoice" name="invoice_id" options={invoices} required />
     {invoices.length === 0 && <p className="small muted">Tidak ada invoice aktif dengan sisa tagihan.</p>}
@@ -1031,15 +1380,98 @@ function PaymentForm({ client, userId, invoices, onDone, onCancel }: FormProps &
 function ProgressForm({ client, userId, project, onDone, onCancel }: FormProps & { project: Option }) {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null)
+  const [latestProgress, setLatestProgress] = useState<{ percent: number; stageName: string; date: string } | null>(null)
+  const [loadingHistory, setLoadingHistory] = useState(true)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    let active = true
+    async function loadLatestProgress() {
+      setLoadingHistory(true)
+      const { data, error: fetchErr } = await client
+        .from('project_progress')
+        .select('progress_percent, stage_name, progress_date')
+        .eq('project_id', project.id)
+        // Progress only ever increases, so the highest entry is the current one.
+        .order('progress_percent', { ascending: false })
+        .limit(1)
+
+      if (active) {
+        if (fetchErr) {
+          setError(`Progres terakhir gagal dimuat: ${fetchErr.message}`)
+        } else if (data && data.length > 0) {
+          setLatestProgress({
+            percent: Number(data[0].progress_percent),
+            stageName: data[0].stage_name,
+            date: data[0].progress_date,
+          })
+        }
+        setLoadingHistory(false)
+      }
+    }
+    void loadLatestProgress()
+    return () => {
+      active = false
+    }
+  }, [client, project.id])
+
+  const currentPercent = latestProgress?.percent ?? 0
+  const isAlreadyComplete = currentPercent >= 100
+  const minAllowed = Math.min(100, Number((currentPercent + 0.01).toFixed(2)))
+
+  const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError('File yang dipilih harus berupa gambar.')
+      event.target.value = ''
+      return
+    }
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setSelectedPhoto(file)
+    setPreviewUrl(URL.createObjectURL(file))
+    setError(null)
+  }
+
+  const handlePhotoRemove = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setPreviewUrl(null)
+    setSelectedPhoto(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
+
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setBusy(true)
     setError(null)
     const form = new FormData(event.currentTarget)
+    const newPercent = Number(form.get('progress_percent'))
+
+    const invalid = Number.isNaN(newPercent)
+      ? 'Persentase progres tidak valid.'
+      : newPercent > 100
+        ? 'Persentase progres tidak boleh melebihi 100%.'
+        : newPercent <= currentPercent
+          ? `Persentase progres baru (${newPercent}%) harus lebih tinggi dari progres saat ini (${currentPercent}%).`
+          : null
+    if (invalid) {
+      setError(invalid)
+      setBusy(false)
+      return
+    }
+
     const { data, error: insertError } = await client.from('project_progress').insert({
       project_id: project.id,
       stage_name: String(form.get('stage_name')).trim(),
-      progress_percent: Number(form.get('progress_percent')),
+      progress_percent: newPercent,
       description: String(form.get('description') || '').trim() || null,
       created_by: userId,
     }).select('id').single()
@@ -1050,11 +1482,10 @@ function ProgressForm({ client, userId, project, onDone, onCancel }: FormProps &
       return
     }
 
-    const photo = form.get('photo')
-    if (photo instanceof File && photo.size > 0) {
+    if (selectedPhoto && selectedPhoto.size > 0) {
       let compressedPhoto: File
       try {
-        compressedPhoto = await compressImage(photo)
+        compressedPhoto = await compressImage(selectedPhoto)
       } catch (compressionError) {
         onDone(`Progres tersimpan. Foto gagal dikompres: ${compressionError instanceof Error ? compressionError.message : 'format foto tidak didukung.'}`)
         setBusy(false)
@@ -1088,13 +1519,80 @@ function ProgressForm({ client, userId, project, onDone, onCancel }: FormProps &
     onDone('Pembaruan progres berhasil disimpan.')
     setBusy(false)
   }
+
   return <form className="form-stack" onSubmit={(event) => void save(event)}>
-    <Field label="Tahapan pekerjaan" name="stage_name" required placeholder="Contoh: Fabrikasi" />
-    <Field label="Persentase progres" name="progress_percent" type="number" min="0" max="100" step="0.01" required />
-    <Field label="Catatan progres" name="description" />
-    <label className="upload-field"><ImagePlus size={17} /><span>Foto dokumentasi (opsional)<small className="upload-hint">Otomatis diperkecil ke JPEG agar upload lebih ringan.</small></span><input type="file" name="photo" accept="image/*" /></label>
-    <Field label="Keterangan foto" name="caption" />
-    <FormFooter error={error} busy={busy} onCancel={onCancel} />
+    <div className="current-progress-banner">
+      <div className="progress-banner-header">
+        <div>
+          <span className="progress-banner-label">Progres Proyek Saat Ini</span>
+          {loadingHistory ? (
+            <span className="progress-banner-stage">Memeriksa catatan progres...</span>
+          ) : latestProgress ? (
+            <span className="progress-banner-stage">Tahap terakhir: <strong>{latestProgress.stageName}</strong> ({date(latestProgress.date)})</span>
+          ) : (
+            <span className="progress-banner-stage">Belum ada catatan progres sebelumnya (0%)</span>
+          )}
+        </div>
+        <strong className="progress-banner-percent">{currentPercent}%</strong>
+      </div>
+      <div className="progress-track">
+        <span style={{ width: `${Math.min(100, Math.max(0, currentPercent))}%` }} />
+      </div>
+    </div>
+
+    {isAlreadyComplete && (
+      <div className="form-success" role="status">
+        Proyek ini sudah mencapai 100%, jadi tidak ada progres baru yang perlu dicatat. Ubah status proyek menjadi “Selesai” dari daftar proyek.
+      </div>
+    )}
+
+    <Field label="Tahapan pekerjaan" name="stage_name" required placeholder="Contoh: Fabrikasi / Pengecatan / Finishing" />
+    <Field
+      label={currentPercent > 0 ? `Persentase progres baru (%) · harus lebih dari ${currentPercent}%` : 'Persentase progres baru (%)'}
+      name="progress_percent"
+      type="number"
+      min={String(minAllowed)}
+      max="100"
+      step="0.01"
+      placeholder={isAlreadyComplete ? 'Sudah 100%' : `${minAllowed} – 100`}
+      required
+    />
+    <Field label="Catatan progres" name="description" placeholder="Rincian kegiatan yang telah diselesaikan..." />
+
+    {!previewUrl ? (
+      <label className="upload-field">
+        <ImagePlus size={18} />
+        <span>
+          Foto dokumentasi (opsional)
+          <small className="upload-hint">Otomatis diperkecil ke JPEG agar upload lebih ringan.</small>
+        </span>
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={handlePhotoSelect}
+        />
+      </label>
+    ) : (
+      <div className="photo-preview-box">
+        <img src={previewUrl} alt="Preview dokumentasi" className="photo-preview-img" />
+        <div className="photo-preview-info">
+          <strong>{selectedPhoto?.name}</strong>
+          <small className="muted">Foto dokumentasi siap diunggah</small>
+        </div>
+        <button
+          type="button"
+          className="button button-secondary photo-remove-btn"
+          onClick={handlePhotoRemove}
+          title="Hapus foto ini"
+        >
+          <Trash2 size={14} /> Hapus
+        </button>
+      </div>
+    )}
+
+    {previewUrl && <Field label="Keterangan foto" name="caption" placeholder="Keterangan foto (opsional)" />}
+    <FormFooter error={error} busy={busy} disabled={loadingHistory || isAlreadyComplete} onCancel={onCancel} />
   </form>
 }
 
@@ -1113,10 +1611,10 @@ function SelectField({ label, name, options, required, optionalLabel, defaultVal
   </label>
 }
 
-function FormFooter({ error, busy, onCancel }: { error: string | null; busy: boolean; onCancel: () => void }) {
+function FormFooter({ error, busy, disabled = false, onCancel }: { error: string | null; busy: boolean; disabled?: boolean; onCancel: () => void }) {
   return <div className="form-footer">
     {error && <p className="form-error" role="alert">{error}</p>}
-    <div className="form-actions"><button type="button" className="button button-secondary" onClick={onCancel}>Batal</button><button className="button button-primary" disabled={busy}>{busy ? 'Menyimpan...' : 'Simpan'}</button></div>
+    <div className="form-actions"><button type="button" className="button button-secondary" onClick={onCancel}>Batal</button><button className="button button-primary" disabled={busy || disabled}>{busy ? 'Menyimpan...' : 'Simpan'}</button></div>
   </div>
 }
 
